@@ -1,10 +1,13 @@
 # Gera o instalador do Domma AvatarIA para Windows e publica nas Releases.
-# Para lançar uma versão: altere "version" em desktop/package.json e crie a tag v<versão> (ex.: v1.0.1).
+# Para lançar uma versão: aumente "version" em desktop/package.json e envie para o main.
+# O electron-builder cria a Release v<versão> com o instalador (e o latest.yml da atualização automática).
+# Se a versão já estiver publicada, nada é substituído.
 name: App Windows
 
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
+    paths: ["desktop/**", ".github/workflows/desktop-windows.yml"]
   workflow_dispatch:
 
 permissions:
