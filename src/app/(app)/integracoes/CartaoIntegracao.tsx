@@ -1,7 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
-import { Plug, RefreshCw, KeyRound, ListChecks, Trash2, Power, Settings2, Server } from "lucide-react";
-import type { ProvedorInfo } from "@/lib/catalogo";
+import { Plug, RefreshCw, KeyRound, ListChecks, Trash2, Power, Settings2, Server, Lock, Eye, EyeOff, ExternalLink } from "lucide-react";
+import type { ProvedorInfo, CampoCredencial } from "@/lib/catalogo";
 import { ETAPAS } from "@/lib/catalogo";
 import { Botao, Selo } from "@/components/ui";
 import { brl, dataHora, num } from "@/lib/formato";
@@ -85,17 +85,19 @@ export function CartaoIntegracao({ info, integ, gastoMes, chamadas, outros }: { 
       {msg && <p className={`mx-3 mb-3 rounded px-2 py-1 text-xs ${msg.ok ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"}`}>{msg.mensagem}</p>}
 
       {painel === "conectar" && (
-        <form className="space-y-3 border-t border-slate-100 bg-slate-50 p-4" action={(fd) => rodar(async () => { const r = await conectar(info.id, fd); if (r.ok) setPainel(""); return r; })}>
-          <p className="text-xs text-slate-500">Credencial: {info.credencial}. A chave é criptografada (AES-256-GCM) e nunca é exibida inteira depois de salva.</p>
-          {info.campos.map((c) => (
-            <div key={c.nome}>
-              <label className="rotulo">{c.rotulo}{c.obrigatorio && !integ.temChave ? " *" : ""}</label>
-              <input name={c.nome} type={c.tipo === "segredo" ? "password" : "text"} autoComplete="off" className="campo"
-                defaultValue={c.nome === "endpoint" ? integ.endpoint ?? "" : ""} placeholder={c.tipo === "segredo" && integ.temChave ? "deixe em branco para manter" : c.ajuda} required={c.obrigatorio && c.tipo !== "segredo" ? true : c.obrigatorio && !integ.temChave} />
-              {c.ajuda && <p className="mt-0.5 text-[11px] text-slate-400">{c.ajuda}</p>}
-            </div>
-          ))}
-          <Botao disabled={pend}>{pend ? "Salvando e testando…" : "Salvar e testar"}</Botao>
+        <form className="space-y-4 border-t border-slate-100 bg-slate-50 p-4" action={(fd) => rodar(async () => { const r = await conectar(info.id, fd); if (r.ok) setPainel(""); return r; })}>
+          {info.campos.filter((c) => !c.avancado).map((c) => <Campo key={c.nome} c={c} temChave={integ.temChave} endpoint={integ.endpoint} />)}
+          {info.campos.some((c) => c.avancado) && (
+            <details className="rounded-lg border border-slate-200 bg-white p-3">
+              <summary className="cursor-pointer text-xs font-semibold text-slate-600">Opções avançadas (normalmente não precisa mexer)</summary>
+              <div className="mt-3 space-y-4">{info.campos.filter((c) => c.avancado).map((c) => <Campo key={c.nome} c={c} temChave={integ.temChave} endpoint={integ.endpoint} />)}</div>
+            </details>
+          )}
+          <div className="flex flex-wrap items-center gap-3">
+            <Botao disabled={pend}>{pend ? "Salvando e testando…" : "Salvar e testar"}</Botao>
+            <Botao type="button" variante="fantasma" onClick={() => setPainel("")}>Cancelar</Botao>
+          </div>
+          <p className="flex items-center gap-1.5 text-[11px] text-slate-500"><Lock size={12} />A chave é criptografada e, depois de salva, só aparecem os 4 últimos dígitos.</p>
         </form>
       )}
 
@@ -157,6 +159,31 @@ export function CartaoIntegracao({ info, integ, gastoMes, chamadas, outros }: { 
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function Campo({ c, temChave, endpoint }: { c: CampoCredencial; temChave: boolean; endpoint: string | null }) {
+  const [ver, setVer] = useState(false);
+  const segredo = c.tipo === "segredo";
+  const exigido = c.obrigatorio && (!segredo || !temChave);
+  const exemplo = segredo ? (temChave ? "Deixe vazio para manter a chave atual" : c.exemplo ? `Cole a chave aqui (${c.exemplo})` : "Cole a chave aqui") : c.exemplo ?? "";
+  return (
+    <div>
+      <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
+        <label htmlFor={`campo-${c.nome}`} className="text-sm font-semibold text-slate-800">{c.rotulo}{exigido && <span className="text-marca-600"> *</span>}</label>
+        {c.link && <a href={c.link.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-medium text-marca-600 hover:underline">{c.link.texto}<ExternalLink size={12} /></a>}
+      </div>
+      <div className="relative">
+        <input id={`campo-${c.nome}`} name={c.nome} type={segredo && !ver ? "password" : "text"} autoComplete="off" spellCheck={false}
+          className={`campo ${segredo ? "pr-10 font-mono" : ""}`} defaultValue={c.nome === "endpoint" ? endpoint ?? "" : ""} placeholder={exemplo} required={exigido} />
+        {segredo && (
+          <button type="button" onClick={() => setVer(!ver)} title={ver ? "Ocultar" : "Mostrar"} className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-slate-400 hover:text-slate-700">
+            {ver ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        )}
+      </div>
+      {c.ajuda && <p className="mt-1 text-xs text-slate-500">{c.ajuda}</p>}
     </div>
   );
 }

@@ -1,6 +1,16 @@
 import type { Etapa } from "@/db/schema";
 
-export type CampoCredencial = { nome: string; rotulo: string; tipo: "segredo" | "texto" | "url"; obrigatorio?: boolean; ajuda?: string };
+export type CampoCredencial = {
+  nome: string; rotulo: string; tipo: "segredo" | "texto" | "url"; obrigatorio?: boolean;
+  /** texto de apoio exibido embaixo do campo */
+  ajuda?: string;
+  /** exemplo exibido dentro do campo vazio */
+  exemplo?: string;
+  /** onde gerar a chave (link clicável) */
+  link?: { url: string; texto: string };
+  /** campo raro: fica recolhido em "Opções avançadas" */
+  avancado?: boolean;
+};
 
 export type ProvedorInfo = {
   id: string;
@@ -29,7 +39,7 @@ export const PROVEDORES: ProvedorInfo[] = [
     descricao: "Cérebro: roteiro, diálogos, escolha de motores e revisão de qualidade dos frames.",
     etapas: ["roteiro", "revisao"],
     credencial: "Chave de API",
-    campos: [{ nome: "apiKey", rotulo: "Chave de API", tipo: "segredo", obrigatorio: true, ajuda: "console.anthropic.com → API Keys" }],
+    campos: [{ nome: "apiKey", rotulo: "Chave de API", tipo: "segredo", obrigatorio: true, exemplo: "sk-ant-…", link: { url: "https://console.anthropic.com/settings/keys", texto: "Gerar chave no console da Anthropic" } }],
     modelos: [
       { id: "claude-opus-5-5", nome: "Claude Opus 5.5", etapa: "roteiro" },
       { id: "claude-sonnet-5-5", nome: "Claude Sonnet 5.5", etapa: "roteiro" },
@@ -45,8 +55,8 @@ export const PROVEDORES: ProvedorInfo[] = [
     etapas: ["voz"],
     credencial: "URL do servidor + token interno",
     campos: [
-      { nome: "endpoint", rotulo: "URL do servidor", tipo: "url", obrigatorio: true, ajuda: "Ex.: https://gpu-voz.seudominio.com" },
-      { nome: "apiKey", rotulo: "Token interno", tipo: "segredo", obrigatorio: true },
+      { nome: "endpoint", rotulo: "URL do servidor", tipo: "url", obrigatorio: true, exemplo: "https://gpu-voz.seudominio.com" },
+      { nome: "apiKey", rotulo: "Token interno", tipo: "segredo", obrigatorio: true, ajuda: "O token que você definiu ao instalar o servidor" },
     ],
     modelos: [{ id: "voicestudio-tts", nome: "VoiceStudio TTS", etapa: "voz" }],
     temSaldoApi: false,
@@ -67,7 +77,7 @@ export const PROVEDORES: ProvedorInfo[] = [
     descricao: "Voz premium com clone instantâneo e marcações de tempo por caractere.",
     etapas: ["voz"],
     credencial: "Chave de API",
-    campos: [{ nome: "apiKey", rotulo: "Chave de API", tipo: "segredo", obrigatorio: true }],
+    campos: [{ nome: "apiKey", rotulo: "Chave de API", tipo: "segredo", obrigatorio: true, exemplo: "sk_…", link: { url: "https://elevenlabs.io/app/settings/api-keys", texto: "Gerar chave no ElevenLabs" } }],
     modelos: [
       { id: "eleven_multilingual_v2", nome: "Multilingual v2", etapa: "voz" },
       { id: "eleven_flash_v2_5", nome: "Flash v2.5 (barato)", etapa: "voz" },
@@ -82,9 +92,9 @@ export const PROVEDORES: ProvedorInfo[] = [
     etapas: ["avatar", "cenario", "cenas"],
     credencial: "Chave de API (kling.ai/dev/api-key)",
     campos: [
-      { nome: "apiKey", rotulo: "Chave de API", tipo: "segredo", obrigatorio: true, ajuda: "kling.ai/dev/api-key → + Create a new API Key (aparece uma única vez)" },
-      { nome: "secretKey", rotulo: "Secret Key (só contas antigas com Access Key + Secret Key)", tipo: "segredo", ajuda: "Deixe vazio se você criou uma chave única" },
-      { nome: "endpoint", rotulo: "Base da API", tipo: "url", ajuda: "Padrão: https://api-singapore.klingai.com" },
+      { nome: "apiKey", rotulo: "Chave de API", tipo: "segredo", obrigatorio: true, ajuda: "Clique em “+ Create a new API Key”. A chave aparece uma única vez — copie na hora.", link: { url: "https://kling.ai/dev/api-key", texto: "Gerar chave no Kling" } },
+      { nome: "secretKey", rotulo: "Secret Key", tipo: "segredo", avancado: true, ajuda: "Só para contas antigas que usam Access Key + Secret Key. Com a chave única, deixe vazio." },
+      { nome: "endpoint", rotulo: "Base da API", tipo: "url", avancado: true, exemplo: "https://api-singapore.klingai.com", ajuda: "Vazio = padrão." },
     ],
     modelos: [
       { id: "kling-avatar-std", nome: "Kling AI Avatar Standard", etapa: "avatar" },
@@ -109,7 +119,7 @@ export const PROVEDORES: ProvedorInfo[] = [
     descricao: "Gêmeo digital treinado com vídeo da pessoa — apresentador principal.",
     etapas: ["avatar"],
     credencial: "Chave de API",
-    campos: [{ nome: "apiKey", rotulo: "Chave de API", tipo: "segredo", obrigatorio: true }],
+    campos: [{ nome: "apiKey", rotulo: "Chave de API", tipo: "segredo", obrigatorio: true, link: { url: "https://app.heygen.com/settings?nav=API", texto: "Gerar chave no HeyGen" } }],
     modelos: [{ id: "heygen-avatar", nome: "HeyGen Avatar (gêmeo digital)", etapa: "avatar" }],
     temSaldoApi: true,
     docs: "https://docs.heygen.com",
@@ -121,8 +131,8 @@ export const PROVEDORES: ProvedorInfo[] = [
     etapas: ["cenas"],
     credencial: "Chave de API",
     campos: [
-      { nome: "apiKey", rotulo: "Chave de API", tipo: "segredo", obrigatorio: true },
-      { nome: "endpoint", rotulo: "Base da API", tipo: "url", ajuda: "BytePlus: https://ark.ap-southeast.bytepluses.com/api/v3" },
+      { nome: "apiKey", rotulo: "Chave de API", tipo: "segredo", obrigatorio: true, link: { url: "https://console.byteplus.com/ark/region:ark+ap-southeast-1/apiKey", texto: "Gerar chave no BytePlus ModelArk" } },
+      { nome: "endpoint", rotulo: "Base da API", tipo: "url", avancado: true, exemplo: "https://ark.ap-southeast.bytepluses.com/api/v3", ajuda: "Vazio = BytePlus. Troque se usar um agregador." },
     ],
     modelos: [
       { id: "seedance-2-0-mini", nome: "Seedance 2.0 Mini", etapa: "cenas" },
@@ -137,7 +147,7 @@ export const PROVEDORES: ProvedorInfo[] = [
     descricao: "Cenas cinematográficas para aberturas e cenas especiais.",
     etapas: ["cenas"],
     credencial: "Chave de API / conta de serviço",
-    campos: [{ nome: "apiKey", rotulo: "Chave da Gemini API", tipo: "segredo", obrigatorio: true }],
+    campos: [{ nome: "apiKey", rotulo: "Chave da Gemini API", tipo: "segredo", obrigatorio: true, exemplo: "AIza…", link: { url: "https://aistudio.google.com/apikey", texto: "Gerar chave no Google AI Studio" } }],
     modelos: [
       { id: "veo-3.0-fast-generate-001", nome: "Veo 3 Fast", etapa: "cenas" },
       { id: "veo-3.0-generate-001", nome: "Veo 3", etapa: "cenas" },
@@ -152,7 +162,7 @@ export const PROVEDORES: ProvedorInfo[] = [
     credencial: "Chave de API (confirmar disponibilidade no seu plano)",
     campos: [
       { nome: "apiKey", rotulo: "Chave de API", tipo: "segredo", obrigatorio: true },
-      { nome: "endpoint", rotulo: "Base da API", tipo: "url", obrigatorio: true },
+      { nome: "endpoint", rotulo: "Base da API", tipo: "url", obrigatorio: true, ajuda: "Endereço da API informado no seu plano Higgsfield" },
     ],
     modelos: [{ id: "higgsfield-efeitos", nome: "Efeitos de câmera", etapa: "efeitos" }],
     temSaldoApi: false,
@@ -166,7 +176,7 @@ export const PROVEDORES: ProvedorInfo[] = [
     etapas: ["olhar"],
     credencial: "URL do servidor + token interno",
     campos: [
-      { nome: "endpoint", rotulo: "URL do servidor", tipo: "url", obrigatorio: true },
+      { nome: "endpoint", rotulo: "URL do servidor", tipo: "url", obrigatorio: true, exemplo: "https://gpu-olhar.seudominio.com" },
       { nome: "apiKey", rotulo: "Token interno", tipo: "segredo" },
     ],
     modelos: [{ id: "olhar-padrao", nome: "Correção de olhar", etapa: "olhar" }],
