@@ -157,17 +157,18 @@ export const PROVEDORES: ProvedorInfo[] = [
   {
     id: "higgsfield",
     nome: "Higgsfield",
-    descricao: "Movimentos de câmera e efeitos para peças de redes sociais.",
-    etapas: ["efeitos"],
-    credencial: "Chave de API (confirmar disponibilidade no seu plano)",
+    descricao: "Cenas com movimento de câmera (Cinema Studio 4.0) para peças de redes sociais.",
+    etapas: ["efeitos", "cenas"],
+    credencial: "Key ID + Key Secret (console.higgsfield.ai)",
     campos: [
-      { nome: "apiKey", rotulo: "Chave de API", tipo: "segredo", obrigatorio: true },
-      { nome: "endpoint", rotulo: "Base da API", tipo: "url", obrigatorio: true, ajuda: "Endereço da API informado no seu plano Higgsfield" },
+      { nome: "apiKey", rotulo: "Key ID", tipo: "segredo", obrigatorio: true, ajuda: "No console, crie uma chave: ela vem em duas partes, Key ID e Key Secret.", link: { url: "https://console.higgsfield.ai", texto: "Gerar chave no Higgsfield" } },
+      { nome: "secretKey", rotulo: "Key Secret", tipo: "segredo", obrigatorio: true, ajuda: "A segunda parte da chave (aparece junto com a Key ID)." },
+      { nome: "endpoint", rotulo: "Base da API", tipo: "url", avancado: true, exemplo: "https://api.higgsfield.ai", ajuda: "Vazio = padrão." },
     ],
-    modelos: [{ id: "higgsfield-efeitos", nome: "Efeitos de câmera", etapa: "efeitos" }],
+    modelos: [{ id: "higgsfield-efeitos", nome: "Cinema Studio 4.0 (movimento de câmera)", etapa: "cenas" }],
     temSaldoApi: false,
-    aviso: "Conector genérico: ajuste os caminhos em 'Avançado' depois de confirmar a API do seu plano.",
-    extraPadrao: { criarPath: "/v1/generations", statusPath: "/v1/generations/{id}", campoId: "id", campoStatus: "status", campoUrl: "video_url", statusOk: "completed" },
+    docs: "https://docs.higgsfield.ai",
+    extraPadrao: { modeloPath: "/higgsfield/cinema-studio/4.0", movimentoCamera: "slow-zoom-in", resolucao: "720p" },
   },
   {
     id: "olhar_gpu",
@@ -227,7 +228,7 @@ export const PRECOS_INICIAIS = [
   { provedor: "seedance", modelo: "seedance-2-5", etapa: "cenas", unidade: "segundo", preco: 0.23, moeda: "USD", qualidade: 3, fonte: "US$ 0,23 a 0,60/s — varia muito por intermediário", confirmado: false, multiplicadorCredito: 8 },
   { provedor: "google_veo", modelo: "veo-3.0-fast-generate-001", etapa: "cenas", unidade: "segundo", preco: null, moeda: "USD", qualidade: 2, fonte: "Cadastrar a partir da sua conta", confirmado: false },
   { provedor: "google_veo", modelo: "veo-3.0-generate-001", etapa: "cenas", unidade: "segundo", preco: null, moeda: "USD", qualidade: 3, fonte: "Cadastrar a partir da sua conta", confirmado: false },
-  { provedor: "higgsfield", modelo: "higgsfield-efeitos", etapa: "efeitos", unidade: "geracao", preco: null, moeda: "USD", qualidade: 2, fonte: "Confirmar disponibilidade no seu plano", confirmado: false },
+  { provedor: "higgsfield", modelo: "higgsfield-efeitos", etapa: "cenas", unidade: "segundo", preco: null, moeda: "USD", qualidade: 3, fonte: "Cinema Studio 4.0 — cadastrar a partir do seu plano", confirmado: false },
   { provedor: "olhar_gpu", modelo: "olhar-padrao", etapa: "olhar", unidade: "minuto_gpu", preco: null, moeda: "USD", qualidade: 2, fonte: "Custo do servidor ÷ uso", confirmado: false },
 ] as const;
 

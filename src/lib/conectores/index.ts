@@ -256,30 +256,39 @@ const googleVeo: Conector = {
   },
 };
 
-/* ---------------- Higgsfield (conector genérico configurável) ---------------- */
-function pegar(obj: unknown, caminhoJson: string): unknown {
-  return caminhoJson.split(".").reduce<unknown>((o, k) => (o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined), obj);
+/* ---------------- Higgsfield (Cinema Studio 4.0 — movimento de câmera) ---------------- */
+const HF = "https://api.higgsfield.ai";
+function hfHeaders(c: Credenciais) {
+  if (!c.apiKey || !c.secretKey) throw new ErroProvedor("Cadastre a Key ID e a Key Secret do Higgsfield", 401, false, false);
+  return { Authorization: `Key ${c.apiKey}:${c.secretKey}`, "Content-Type": "application/json" };
 }
 const higgsfield: Conector = {
   async testar(c) {
-    exigirChave(c);
-    if (!c.endpoint) throw new ErroProvedor("Base da API não cadastrada", 400, false, false);
-    await http(base(c, ""), { headers: { Authorization: `Bearer ${c.apiKey}` }, timeoutMs: 15_000 }).catch((e: ErroProvedor) => { if (e.status === 401 || e.status === 403) throw e; });
-    return { ok: true, mensagem: "Servidor acessível (conector genérico — valide com uma geração de teste)" };
+    // Consulta de status de uma tarefa inexistente: 404 = chave aceita; 401/403 = chave inválida
+    const r = await fetch(`${base(c, HF)}/requests/00000000-0000-0000-0000-000000000000/status`, { headers: hfHeaders(c), signal: AbortSignal.timeout(15_000) });
+    if (r.status === 401 || r.status === 403) throw new ErroProvedor(`HTTP ${r.status}: chave recusada pelo Higgsfield`, r.status, false, false);
+    if (r.status >= 500) throw new ErroProvedor(`HTTP ${r.status}: Higgsfield indisponível`, r.status);
+    return { ok: true, mensagem: "OK — chave aceita pelo Higgsfield" };
   },
   async cena(c, e) {
-    const r = await http(`${base(c, "")}${caminho(c, "criarPath", "/v1/generations")}`, {
-      method: "POST", headers: { Authorization: `Bearer ${exigirChave(c)}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: e.prompt, image_url: e.imagemUrl, duration: e.duracao, aspect_ratio: e.proporcao }),
+    const r = await http(`${base(c, HF)}${caminho(c, "modeloPath", "/higgsfield/cinema-studio/4.0")}`, {
+      method: "POST", headers: { ...hfHeaders(c), "Idempotency-Key": crypto.randomUUID() },
+      body: JSON.stringify({
+        prompt: e.prompt, duration: Math.min(30, Math.max(4, Math.round(e.duracao))), aspect_ratio: e.proporcao,
+        resolution: caminho(c, "resolucao", "720p"), generate_audio: false,
+        ...(e.imagemUrl ? { image_urls: [e.imagemUrl] } : {}),
+        ...(caminho(c, "movimentoCamera", "") ? { camera_movement: caminho(c, "movimentoCamera", "") } : {}),
+      }),
     });
-    return String(pegar(await r.json(), caminho(c, "campoId", "id")));
+    const j = await json<{ request_id?: string }>(r);
+    if (!j.request_id) throw new ErroProvedor("Higgsfield não devolveu request_id");
+    return j.request_id;
   },
   async consultar(c, id) {
-    const r = await http(`${base(c, "")}${caminho(c, "statusPath", "/v1/generations/{id}").replace("{id}", id)}`, { headers: { Authorization: `Bearer ${exigirChave(c)}` } });
-    const j = await r.json();
-    const st = String(pegar(j, caminho(c, "campoStatus", "status")));
-    if (st === caminho(c, "statusOk", "completed")) return { status: "ok", url: String(pegar(j, caminho(c, "campoUrl", "video_url"))) };
-    if (/fail|error|cancel/i.test(st)) return { status: "erro", erro: st };
+    const r = await http(`${base(c, HF)}/requests/${encodeURIComponent(id)}/status`, { headers: hfHeaders(c) });
+    const j = await json<{ status: string; video?: { url?: string }; images?: { url: string }[]; error?: unknown }>(r);
+    if (j.status === "completed") return { status: "ok", url: j.video?.url ?? j.images?.[0]?.url };
+    if (["failed", "nsfw", "canceled"].includes(j.status)) return { status: "erro", erro: j.status === "nsfw" ? "Recusado pela moderação de conteúdo do Higgsfield" : `${j.status}${j.error ? `: ${JSON.stringify(j.error).slice(0, 200)}` : ""}` };
     return { status: "rodando" };
   },
 };

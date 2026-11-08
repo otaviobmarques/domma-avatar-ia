@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import type { DB } from "./index";
 import * as schema from "./schema";
 import { PROVEDORES, PRECOS_INICIAIS } from "@/lib/catalogo";
@@ -42,8 +42,12 @@ export async function seed(db: DB) {
     if (p.extraPadrao) {
       const [atual] = await db.select().from(schema.integracoes).where(eq(schema.integracoes.provedor, p.id));
       const faltando = Object.fromEntries(Object.entries(p.extraPadrao).filter(([k]) => !(k in (atual?.extra ?? {}))));
-      if (atual && Object.keys(faltando).length) {
-        await db.update(schema.integracoes).set({ extra: { ...atual.extra, ...faltando } }).where(eq(schema.integracoes.id, atual.id));
+      // Opções do conector genérico antigo do Higgsfield, substituído pelo Cinema Studio 4.0
+      const obsoletas = p.id === "higgsfield" ? ["criarPath", "statusPath", "campoId", "campoStatus", "campoUrl", "statusOk"].filter((k) => k in (atual?.extra ?? {})) : [];
+      if (atual && (Object.keys(faltando).length || obsoletas.length)) {
+        const extra = { ...atual.extra, ...faltando };
+        for (const k of obsoletas) delete extra[k];
+        await db.update(schema.integracoes).set({ extra }).where(eq(schema.integracoes.id, atual.id));
       }
     }
   }
@@ -56,6 +60,10 @@ export async function seed(db: DB) {
       conferidoEm: pr.confirmado ? new Date("2026-11-08") : null,
     }).onConflictDoNothing();
   }
+
+  // Higgsfield passou a ser cobrado por segundo de cena (Cinema Studio 4.0)
+  await db.update(schema.precos).set({ etapa: "cenas", unidade: "segundo", qualidade: 3, fonte: "Cinema Studio 4.0 — cadastrar a partir do seu plano" })
+    .where(and(eq(schema.precos.provedor, "higgsfield"), eq(schema.precos.modelo, "higgsfield-efeitos"), eq(schema.precos.unidade, "geracao"), isNull(schema.precos.preco)));
 
   const [{ c }] = await db.select({ c: sql<number>`count(*)::int` }).from(schema.biblioteca);
   // Os cenários padrão são gerados com FFmpeg: sem FFmpeg (ex.: Vercel), o worker faz isso quando subir.

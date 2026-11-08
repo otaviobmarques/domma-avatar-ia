@@ -26,7 +26,7 @@ export const REGRAS: Record<Exclude<Modo, "manual">, Candidatos & { descricao: s
   premium: {
     descricao: "ElevenLabs + HeyGen; Veo/Seedance nas cenas especiais.",
     voz: [EL, VS, EL_FLASH], avatarClose: [HEYGEN, AV_PRO, AV_STD], avatar: [HEYGEN, AV_PRO, AV_STD],
-    cenas: ["google_veo/veo-3.0-generate-001", "seedance/seedance-2-5", "seedance/seedance-2-0-mini", "kling/kling-v2-1", LOCAL], cenario: ["kling/kolors"],
+    cenas: ["google_veo/veo-3.0-generate-001", "seedance/seedance-2-5", "higgsfield/higgsfield-efeitos", "seedance/seedance-2-0-mini", "kling/kling-v2-1", LOCAL], cenario: ["kling/kolors"],
   },
 };
 
