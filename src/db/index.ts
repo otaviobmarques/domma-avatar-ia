@@ -16,7 +16,7 @@ async function criar(): Promise<DB> {
     const { default: postgres } = await import("postgres");
     const { drizzle } = await import("drizzle-orm/postgres-js");
     const { migrate } = await import("drizzle-orm/postgres-js/migrator");
-    const client = postgres(url, { max: Number(process.env.DB_POOL ?? 5), prepare: false });
+    const client = postgres(url, { max: Number(process.env.DB_POOL ?? 5), prepare: false, idle_timeout: 20, connect_timeout: 15 });
     const db = drizzle(client, { schema });
     await migrate(db, { migrationsFolder: MIGRATIONS });
     return db as unknown as DB;
