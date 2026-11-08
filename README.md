@@ -51,6 +51,15 @@ Variáveis (iguais na Vercel e no Railway): `DATABASE_URL` (pooler do Supabase),
 
 > `APP_ENCRYPTION_KEY` precisa ser **a mesma** nos dois serviços — é ela que decifra as chaves de API.
 
+## Aplicativo para Windows
+
+Pasta `desktop/` (Electron): abre https://avataria.dommasistemas.com.br numa janela própria, libera câmera/microfone só para esse domínio, mostra tela de "sem conexão" e se atualiza sozinho.
+
+- Download para os usuários: página **/baixar** do sistema (link fixo `/api/desktop/windows` → instalador mais recente).
+- **Lançar uma versão nova:** aumente `version` em `desktop/package.json` (ex.: `1.0.1`) e envie para o `main`. O workflow **App Windows** gera o instalador num servidor Windows e publica a Release `v1.0.1` com o `.exe`, o `.blockmap` e o `latest.yml` — os apps instalados recebem a atualização sozinhos.
+- Teste local: `cd desktop && npm install && npm start`.
+- Sem certificado de assinatura de código, o Windows mostra o aviso do SmartScreen na instalação. Com um certificado da Domma Tecnologia, configure `CSC_LINK`/`CSC_KEY_PASSWORD` no workflow.
+
 ## Estrutura
 
 ```
