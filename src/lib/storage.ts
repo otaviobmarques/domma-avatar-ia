@@ -11,7 +11,16 @@ import { hmac } from "./crypto";
 const RAIZ = path.join(process.cwd(), ".data", "files");
 export const usaSupabase = () => !!(env.supabaseUrl && env.supabaseKey);
 
+/** Em produção (Vercel/Railway) o disco é temporário: exige o Supabase Storage. */
+function exigirStorage() {
+  if (usaSupabase()) return;
+  if (process.env.VERCEL || process.env.RAILWAY_ENVIRONMENT) {
+    throw new Error("Armazenamento não configurado: defina SUPABASE_SERVICE_ROLE_KEY (Supabase → Project Settings → API Keys).");
+  }
+}
+
 function seguro(p: string) {
+  exigirStorage();
   const n = path.posix.normalize(p).replace(/^\/+/, "");
   if (n.startsWith("..")) throw new Error("Caminho inválido");
   return n;
