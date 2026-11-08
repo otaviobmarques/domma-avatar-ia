@@ -1,0 +1,22 @@
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; }
+body {
+  font-family: "Segoe UI", Inter, system-ui, sans-serif; color: #fff; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(800px 500px at 80% 0%, rgba(115,96,250,.45), transparent 60%), radial-gradient(700px 500px at 10% 100%, rgba(76,58,201,.45), transparent 60%), #1e1238;
+  user-select: none;
+}
+.caixa { text-align: center; padding: 32px; max-width: 460px; }
+.marca { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 28px; }
+.nome { font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
+.nome b { color: #9282fc; font-weight: 800; }
+.sub { font-size: 10px; letter-spacing: .35em; color: rgba(226,221,255,.6); font-weight: 700; margin-top: 2px; text-align: left; }
+.onda path { stroke-dasharray: 220; stroke-dashoffset: 220; animation: desenhar 1.6s ease-in-out infinite alternate; }
+@keyframes desenhar { to { stroke-dashoffset: 0; } }
+.barra { width: 220px; height: 4px; border-radius: 99px; background: rgba(255,255,255,.12); overflow: hidden; margin: 0 auto; }
+.barra i { display: block; width: 40%; height: 100%; border-radius: 99px; background: linear-gradient(90deg,#9282fc,#5f4be8); animation: correr 1.2s ease-in-out infinite; }
+@keyframes correr { 0% { transform: translateX(-100%); } 100% { transform: translateX(260%); } }
+p { color: #cbd5e1; font-size: 14px; line-height: 1.55; margin-top: 16px; }
+h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+button { margin-top: 24px; border: 0; border-radius: 12px; padding: 12px 22px; font: inherit; font-weight: 700; font-size: 14px; color: #1e1238; background: #fff; cursor: pointer; }
+button:hover { background: #f4f2ff; }
+.icone-off { width: 64px; height: 64px; border-radius: 18px; margin: 0 auto 18px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); }

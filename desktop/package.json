@@ -1,0 +1,69 @@
+{
+  "name": "domma-avataria-desktop",
+  "productName": "Domma AvatarIA",
+  "version": "1.0.0",
+  "description": "Domma AvatarIA — aplicativo para Windows (Domma Tecnologia)",
+  "author": "Domma Tecnologia",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win nsis --x64"
+  },
+  "build": {
+    "appId": "br.com.dommasistemas.avataria",
+    "productName": "Domma AvatarIA",
+    "copyright": "© Domma Tecnologia",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "Domma-AvatarIA-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "Domma AvatarIA",
+      "installerLanguages": [
+        "pt_BR"
+      ],
+      "language": "1046",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "uninstallDisplayName": "Domma AvatarIA"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "otaviobmarques",
+        "repo": "domma-avatar-ia",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
+  },
+  "devDependencies": {
+    "electron": "39.8.10",
+    "electron-builder": "^26.0.12"
+  }
+}

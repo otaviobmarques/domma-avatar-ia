@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { Home, Plus, FolderKanban, UserRound, Library, CheckCircle2, BarChart3, Plug, Tags, Settings, LogOut, Menu as MenuIcon, X, FlaskConical } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "./Logo";
+import { BotaoBaixarApp } from "./BotaoBaixarApp";
 
 const GRUPOS = [
   { titulo: "Criar", itens: [
@@ -82,6 +83,7 @@ export function Menu({ nome, papel, sistema, demo, sair }: { nome: string; papel
           ))}
         </nav>
 
+        <div className="relative"><BotaoBaixarApp variante="menu" /></div>
         <div className="relative m-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-marca-400 to-marca-700 text-xs font-bold text-white">{iniciais || "?"}</div>

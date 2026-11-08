@@ -4,6 +4,7 @@ import { ShieldCheck, Gauge, Sparkles } from "lucide-react";
 import { acaoEntrar } from "@/app/acoes/sessao";
 import { Botao } from "@/components/ui";
 import { Logo, Simbolo } from "@/components/Logo";
+import { BotaoBaixarApp } from "@/components/BotaoBaixarApp";
 
 const DESTAQUES = [
   { icone: Sparkles, titulo: "Gêmeo digital", texto: "Voz clonada, boca e olhos sincronizados, em qualquer cenário." },
@@ -45,6 +46,7 @@ export default function Entrar() {
           <input id="senha" name="senha" type="password" required className="campo mb-5" autoComplete="current-password" />
           {estado?.erro && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{estado.erro}</p>}
           <Botao className="w-full py-3" disabled={pendente}>{pendente ? "Entrando…" : "Entrar"}</Botao>
+          <BotaoBaixarApp variante="login" />
           <p className="mt-6 text-center text-xs text-slate-400">Acesso restrito · Domma Tecnologia</p>
         </form>
       </div>

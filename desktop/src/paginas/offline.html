@@ -1,0 +1,11 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'"><title>Sem conexão — Domma AvatarIA</title><link rel="stylesheet" href="estilo.css"></head>
+<body><div class="caixa">
+  <div class="icone-off"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#b3a7ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"/><path d="M8.5 16.4a5 5 0 0 1 7 0"/><path d="M2 8.8a15 15 0 0 1 4.2-2.6"/><path d="M5 12.9a10 10 0 0 1 5.2-2.7"/><path d="M22 8.8a15 15 0 0 0-11.3-3.7"/><path d="M19 12.9a10 10 0 0 0-2.4-1.7"/><path d="m2 2 20 20"/></svg></div>
+  <h1>Sem conexão com o Domma AvatarIA</h1>
+  <p>Verifique sua internet. Assim que a conexão voltar, clique em tentar de novo — vamos continuar de onde você parou.</p>
+  <button id="tentar">Tentar de novo</button>
+</div>
+<script>
+  document.getElementById("tentar").onclick = () => window.dommaDesktop && window.dommaDesktop.tentarDeNovo();
+  window.addEventListener("online", () => window.dommaDesktop && window.dommaDesktop.tentarDeNovo());
+</script></body></html>
