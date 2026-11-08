@@ -121,7 +121,7 @@ const voicestudio: Conector = {
   },
 };
 
-/* ---------------- Kling (API oficial com AK/SK ou agregador com chave única) ---------------- */
+/* ---------------- Kling (chave única Bearer; AK/SK com JWT só no padrão antigo) ---------------- */
 async function klingHeaders(c: Credenciais) {
   const ak = exigirChave(c);
   if (!c.secretKey) return { Authorization: `Bearer ${ak}`, "Content-Type": "application/json" };
@@ -140,7 +140,7 @@ const kling: Conector = {
   async testar(c) {
     // Consulta a lista de tarefas (chamada mínima, sem custo)
     await http(`${base(c, "https://api-singapore.klingai.com")}${caminho(c, "imagemPath", "/v1/images/generations")}?pageNum=1&pageSize=1`, { headers: await klingHeaders(c) });
-    return { ok: true, mensagem: `OK — ${c.secretKey ? "API oficial (JWT)" : "agregador"}` };
+    return { ok: true, mensagem: `OK — ${c.secretKey ? "Access Key + Secret Key (padrão antigo)" : "chave de API"}` };
   },
   async avatar(c, e) {
     if (!e.fotoUrl) throw new ErroProvedor("Avatar sem foto", 400, false, false);
@@ -151,7 +151,7 @@ const kling: Conector = {
     });
   },
   async imagem(c, e) {
-    return klingCriar(c, caminho(c, "imagemPath", "/v1/images/generations"), { model_name: "kolors-v2", prompt: e.prompt, aspect_ratio: e.proporcao, n: 1 });
+    return klingCriar(c, caminho(c, "imagemPath", "/v1/images/generations"), { model_name: caminho(c, "modeloImagem", "kling-v3"), prompt: e.prompt, aspect_ratio: e.proporcao, n: 1 });
   },
   async cena(c, e) {
     return klingCriar(c, caminho(c, "videoPath", "/v1/videos/image2video"), {

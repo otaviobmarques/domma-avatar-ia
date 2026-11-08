@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { DB } from "./index";
 import * as schema from "./schema";
 import { PROVEDORES, PRECOS_INICIAIS } from "@/lib/catalogo";
@@ -38,6 +38,14 @@ export async function seed(db: DB) {
       extra: p.extraPadrao ?? {},
       endpoint: null,
     }).onConflictDoNothing();
+    // Atualizações do catálogo: acrescenta opções avançadas novas sem apagar o que o Administrador mudou
+    if (p.extraPadrao) {
+      const [atual] = await db.select().from(schema.integracoes).where(eq(schema.integracoes.provedor, p.id));
+      const faltando = Object.fromEntries(Object.entries(p.extraPadrao).filter(([k]) => !(k in (atual?.extra ?? {}))));
+      if (atual && Object.keys(faltando).length) {
+        await db.update(schema.integracoes).set({ extra: { ...atual.extra, ...faltando } }).where(eq(schema.integracoes.id, atual.id));
+      }
+    }
   }
 
   for (const pr of PRECOS_INICIAIS) {
