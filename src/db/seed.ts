@@ -52,7 +52,9 @@ export async function seed(db: DB) {
   const [{ c }] = await db.select({ c: sql<number>`count(*)::int` }).from(schema.biblioteca);
   // Os cenários padrão são gerados com FFmpeg: sem FFmpeg (ex.: Vercel), o worker faz isso quando subir.
   const temFfmpeg = await import("@/lib/ffmpeg").then((f) => f.executar(process.env.FFMPEG_PATH ?? "ffmpeg", ["-version"], 10_000)).then(() => true, () => false);
-  if (c === 0 && temFfmpeg) {
+  const { usaSupabase } = await import("@/lib/storage");
+  const storageOk = usaSupabase() || !(process.env.VERCEL || process.env.RAILWAY_ENVIRONMENT);
+  if (c === 0 && temFfmpeg && storageOk) {
     const { gerarImagem } = await import("@/lib/ffmpeg");
     const { salvar } = await import("@/lib/storage");
     const fs = await import("node:fs/promises");
