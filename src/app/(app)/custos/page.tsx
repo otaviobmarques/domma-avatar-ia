@@ -1,3 +1,4 @@
+import { BarChart3 as IcBarChart3 } from "lucide-react";
 import Link from "next/link";
 import { getDb, schema } from "@/db";
 import { exigir } from "@/lib/auth";
@@ -32,7 +33,7 @@ export default async function Custos({ searchParams }: { searchParams: Promise<R
   const desvio = calibr.length ? calibr.reduce((s, v) => s + (v.real - v.estimado!) / v.estimado!, 0) / calibr.length : null;
   return (
     <>
-      <Cabecalho titulo="Custos e Relatórios" sub="Saber para onde vai o dinheiro." acoes={<>
+      <Cabecalho titulo="Custos e Relatórios" icone={IcBarChart3} sub="Saber para onde vai o dinheiro." acoes={<>
         <a href={`/api/custos/csv?${qs}`}><Botao variante="secundario"><Download size={14} />Exportar CSV</Botao></a>
         <BotaoLink href={`/custos/imprimir?${qs}`} variante="secundario"><Printer size={14} />Exportar PDF</BotaoLink>
         <BotaoLink href="/configuracoes#clientes" variante="secundario"><Wallet size={14} />Definir orçamento</BotaoLink>

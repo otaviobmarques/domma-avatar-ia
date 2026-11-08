@@ -1,3 +1,4 @@
+import { Library as IcLibrary } from "lucide-react";
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 import { getDb, schema } from "@/db";
@@ -25,7 +26,7 @@ export default async function Biblioteca({ searchParams }: { searchParams: Promi
   };
   return (
     <>
-      <Cabecalho titulo="Biblioteca" sub="Cenários, vinhetas, chamadas prontas, trilhas e logotipos — tudo reaproveitável sem custo de nova geração." />
+      <Cabecalho titulo="Biblioteca" icone={IcLibrary} sub="Cenários, vinhetas, chamadas prontas, trilhas e logotipos — tudo reaproveitável sem custo de nova geração." />
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
         <Link href="/biblioteca" className={`rounded-full border px-3 py-1 ${!tipo ? "border-marca-500 bg-marca-50" : "border-slate-200 bg-white"}`}>Tudo</Link>
         {Object.entries(TIPOS).map(([k, v]) => <Link key={k} href={`/biblioteca?tipo=${k}`} className={`rounded-full border px-3 py-1 ${tipo === k ? "border-marca-500 bg-marca-50" : "border-slate-200 bg-white"}`}>{v}</Link>)}

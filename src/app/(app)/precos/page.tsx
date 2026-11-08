@@ -1,3 +1,4 @@
+import { Tags as IcTags } from "lucide-react";
 import { asc, desc, eq } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { exigir } from "@/lib/auth";
@@ -19,7 +20,7 @@ export default async function Precos() {
   const fator = fatorCambio({ cotacao: cfg.cotacaoUsd, colchao: cfg.colchao });
   return (
     <>
-      <Cabecalho titulo="Tabela de Preços" sub="Mantenha o preço de cada motor atualizado — é daqui que sai toda estimativa. Nada é inventado: sem preço, a linha fica “a confirmar”." acoes={<AcoesPrecos />} />
+      <Cabecalho titulo="Tabela de Preços" icone={IcTags} sub="Mantenha o preço de cada motor atualizado — é daqui que sai toda estimativa. Nada é inventado: sem preço, a linha fica “a confirmar”." acoes={<AcoesPrecos />} />
       <div className="mb-6 grid gap-4 md:grid-cols-3">
         <Cartao titulo="Cotação do dólar" className="md:col-span-2">
           <form action={salvarCambio} className="flex flex-wrap items-end gap-3">

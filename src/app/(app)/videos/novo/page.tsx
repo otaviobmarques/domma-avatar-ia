@@ -1,3 +1,4 @@
+import { Clapperboard as IcClapperboard } from "lucide-react";
 import { desc, eq } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { exigir } from "@/lib/auth";
@@ -11,7 +12,7 @@ export default async function NovoVideo() {
   const modelos = await db.select().from(schema.videos).where(eq(schema.videos.isModelo, true)).orderBy(desc(schema.videos.criadoEm));
   return (
     <>
-      <Cabecalho titulo="Novo vídeo" sub="Formato → Roteiro → Avatar e cenário → Motores e custo → Revisão" />
+      <Cabecalho titulo="Novo vídeo" icone={IcClapperboard} sub="Formato → Roteiro → Avatar e cenário → Motores e custo → Revisão" />
       <div className="grid gap-4 md:grid-cols-2">
         <Cartao titulo="Começar do zero">
           <p className="mb-4 text-sm text-slate-600">Carro-chefe do MVP: propaganda de 15 a 60 segundos.</p>

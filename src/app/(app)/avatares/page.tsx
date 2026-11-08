@@ -1,3 +1,4 @@
+import { UserRound as IcUserRound } from "lucide-react";
 import Link from "next/link";
 import { and, desc, eq, ne } from "drizzle-orm";
 import { getDb, schema } from "@/db";
@@ -23,7 +24,7 @@ export default async function Avatares({ searchParams }: { searchParams: Promise
     .where(and(ne(schema.avatares.status, "excluido"), filtroEmpresa ? eq(schema.avatares.empresaId, filtroEmpresa) : undefined)).orderBy(desc(schema.avatares.criadoEm));
   return (
     <>
-      <Cabecalho titulo="Avatares" sub="Gêmeos digitais — só com consentimento verificado da própria pessoa." />
+      <Cabecalho titulo="Avatares" icone={IcUserRound} sub="Gêmeos digitais — só com consentimento verificado da própria pessoa." />
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
         <Link href="/avatares" className={`rounded-full border px-3 py-1 ${!empresa ? "border-marca-500 bg-marca-50" : "border-slate-200 bg-white"}`}>Todas</Link>
         {empresas.map((e) => <Link key={e.id} href={`/avatares?empresa=${e.id}`} className={`rounded-full border px-3 py-1 ${empresa === e.id ? "border-marca-500 bg-marca-50" : "border-slate-200 bg-white"}`}>{e.nome}</Link>)}

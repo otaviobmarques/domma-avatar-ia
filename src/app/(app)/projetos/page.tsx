@@ -1,3 +1,4 @@
+import { FolderKanban as IcFolderKanban } from "lucide-react";
 import Link from "next/link";
 import { and, desc, eq } from "drizzle-orm";
 import { getDb, schema } from "@/db";
@@ -23,7 +24,7 @@ export default async function Projetos({ searchParams }: { searchParams: Promise
   }
   return (
     <>
-      <Cabecalho titulo="Projetos" sub="Vídeos por cliente e campanha." acoes={s.papel !== "cliente" && <BotaoLink href="/videos/novo">Novo vídeo</BotaoLink>} />
+      <Cabecalho titulo="Projetos" icone={IcFolderKanban} sub="Vídeos por cliente e campanha." acoes={s.papel !== "cliente" && <BotaoLink href="/videos/novo">Novo vídeo</BotaoLink>} />
       {s.papel !== "cliente" && (
         <div className="mb-4 flex flex-wrap gap-2 text-sm">
           <Link href="/projetos" className={`rounded-full border px-3 py-1 ${!sp.empresa ? "border-marca-500 bg-marca-50" : "border-slate-200 bg-white"}`}>Todos</Link>

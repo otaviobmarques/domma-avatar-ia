@@ -11,7 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen">
       <Menu nome={s.nome} papel={s.papel} sistema={cfg.nomeSistema} demo={cfg.modoDemo} sair={acaoSair} />
-      <main className="px-4 pb-16 pt-16 md:ml-60 md:px-8 md:pt-8 print:m-0 print:p-0">
+      <main className="px-4 pb-16 pt-16 md:ml-64 md:px-10 md:pt-10 print:m-0 print:p-0">
         <div className="mx-auto max-w-6xl">{children}</div>
       </main>
     </div>

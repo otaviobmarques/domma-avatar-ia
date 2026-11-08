@@ -1,3 +1,4 @@
+import { Plug as IcPlug } from "lucide-react";
 import { desc, gte, sql } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { exigir } from "@/lib/auth";
@@ -30,13 +31,13 @@ export default async function Integracoes() {
   };
   return (
     <>
-      <Cabecalho titulo="Integrações" sub="Cada provedor é um cartão: status, chave, saldo, teste e liga/desliga. Só o Administrador acessa." />
+      <Cabecalho titulo="Integrações" icone={IcPlug} sub="Cada provedor é um cartão: status, chave, saldo, teste e liga/desliga. Só o Administrador acessa." />
       <div className="mb-4 space-y-2">
         <Aviso tipo="aviso">Assinatura no site não é o mesmo que acesso por API. Antes de integrar, confirme para cada conta: existe API? qual plano? permite uso comercial e revenda (necessário na fase SaaS)? Evite serviços que operam sua conta pessoal por trás de um endpoint não oficial — risco de bloqueio.</Aviso>
         {cfg.modoDemo && <Aviso>Modo demonstração ativo: etapas sem motor ligado são geradas pelo simulador local (custo real R$ 0). Desative em Configurações quando as chaves estiverem cadastradas.</Aviso>}
       </div>
       {configurados.length > 0 && <div className="mb-8 grid gap-4 lg:grid-cols-2">{configurados.map(item)}</div>}
-      <h2 id="adicionar" className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">+ Adicionar integração</h2>
+      <h2 id="adicionar" className="mb-3 mt-2 font-titulo text-lg font-bold text-tinta">Adicionar integração <span className="ml-1 text-sm font-medium text-slate-400">— provedores disponíveis para conectar</span></h2>
       <div className="grid gap-4 lg:grid-cols-2">{disponiveis.map(item)}</div>
     </>
   );

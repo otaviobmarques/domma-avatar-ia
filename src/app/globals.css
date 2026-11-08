@@ -1,24 +1,44 @@
 @import "tailwindcss";
 
 @theme {
-  --color-marca-50: #f1efff;
-  --color-marca-100: #e2ddff;
+  --color-marca-50: #f4f2ff;
+  --color-marca-100: #e8e4ff;
+  --color-marca-200: #d3ccff;
+  --color-marca-300: #b3a7ff;
+  --color-marca-400: #9282fc;
   --color-marca-500: #7360fa;
   --color-marca-600: #5f4be8;
   --color-marca-700: #4c3ac9;
+  --color-marca-800: #3b2c9c;
   --color-tinta: #1e1238;
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-tinta-2: #2a1b4d;
+  --font-sans: var(--fonte-texto), "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-titulo: var(--fonte-titulo), var(--fonte-texto), ui-sans-serif, system-ui, sans-serif;
+  --shadow-suave: 0 1px 2px rgb(30 18 56 / 0.04), 0 4px 16px -4px rgb(30 18 56 / 0.08);
+  --shadow-marca: 0 6px 20px -6px rgb(95 75 232 / 0.55);
 }
 
 :root { color-scheme: light; }
-body { background: #f6f7f9; color: #0f172a; }
+body {
+  color: #1e1238;
+  background:
+    radial-gradient(1200px 500px at 85% -10%, rgb(115 96 250 / 0.09), transparent 60%),
+    radial-gradient(900px 400px at 10% 0%, rgb(115 96 250 / 0.05), transparent 60%),
+    #f7f6fb;
+  background-attachment: fixed;
+}
+h1, h2, h3 { font-family: var(--font-titulo); }
 
 .campo {
-  @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-marca-500 focus:ring-2 focus:ring-marca-100 disabled:bg-slate-100;
+  @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-tinta shadow-[0_1px_2px_rgb(30_18_56/0.04)] outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-marca-400 focus:ring-4 focus:ring-marca-100 disabled:bg-slate-50;
 }
-.rotulo { @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500; }
-.cartao { @apply rounded-xl border border-slate-200 bg-white shadow-sm; }
+.rotulo { @apply mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500; }
+.cartao { @apply rounded-2xl border border-slate-200/70 bg-white shadow-suave; }
 .tabela { @apply w-full text-sm; }
-.tabela th { @apply border-b border-slate-200 bg-slate-50 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500; }
-.tabela td { @apply border-b border-slate-100 px-3 py-2 align-top; }
+.tabela th { @apply border-b border-slate-100 bg-slate-50/70 px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 first:rounded-tl-lg last:rounded-tr-lg; }
+.tabela td { @apply border-b border-slate-100 px-3 py-3 align-top; }
+.tabela tbody tr { @apply transition-colors hover:bg-marca-50/40; }
 .tabela tr:last-child td { @apply border-b-0; }
+
+@keyframes surgir { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.surgir { animation: surgir 0.35s ease-out both; }

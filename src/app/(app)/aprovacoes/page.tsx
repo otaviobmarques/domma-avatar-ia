@@ -1,3 +1,4 @@
+import { CheckCircle2 as IcCheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 import { getDb, schema } from "@/db";
@@ -14,7 +15,7 @@ export default async function Aprovacoes() {
     .orderBy(desc(schema.aprovacoes.criadoEm)).limit(200);
   return (
     <>
-      <Cabecalho titulo="Aprovações" sub="Links enviados aos clientes — aprovam sem precisar de conta." />
+      <Cabecalho titulo="Aprovações" icone={IcCheckCircle2} sub="Links enviados aos clientes — aprovam sem precisar de conta." />
       {linhas.length === 0 ? <Vazio>Nenhum vídeo enviado para aprovação ainda.</Vazio> : (
         <Cartao>
           <table className="tabela">

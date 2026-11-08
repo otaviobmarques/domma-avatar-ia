@@ -29,15 +29,20 @@ export function CartaoIntegracao({ info, integ, gastoMes, chamadas, outros }: { 
   const etapasProv = ETAPAS.filter((e) => info.etapas.includes(e.id));
 
   return (
-    <div className="cartao flex flex-col">
-      <div className="flex items-start justify-between gap-3 p-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold">{info.nome}</h3>
-            <Selo cor={st.cor}>{st.nome}</Selo>
+    <div className={`cartao flex flex-col transition ${integ.ligado ? "ring-2 ring-marca-200" : ""}`}>
+      <div className="flex items-start justify-between gap-3 p-5">
+        <div className="flex min-w-0 gap-3.5">
+        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl font-titulo text-sm font-extrabold ${integ.ligado ? "bg-gradient-to-br from-marca-500 to-marca-700 text-white shadow-marca" : "bg-marca-50 text-marca-600 ring-1 ring-marca-100"}`}>
+          {info.nome.replace(/[^A-Za-zÀ-ú ]/g, "").split(" ").filter(Boolean).slice(0, 2).map((x) => x[0]).join("").toUpperCase()}
+        </div>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-titulo text-[15px] font-bold text-tinta">{info.nome}</h3>
+            <Selo cor={st.cor}><span className={`h-1.5 w-1.5 rounded-full ${{ green: "bg-emerald-500", red: "bg-red-500", amber: "bg-amber-500" }[st.cor] ?? "bg-slate-400"}`} />{st.nome}</Selo>
           </div>
           <p className="mt-1 text-xs text-slate-500">{info.descricao}</p>
-          <div className="mt-1 flex flex-wrap gap-1">{etapasProv.map((e) => <Selo key={e.id} cor={integ.padraoDe.includes(e.id) ? "violet" : "slate"}>{e.nome}{integ.padraoDe.includes(e.id) ? " · padrão" : ""}</Selo>)}</div>
+          <div className="mt-2 flex flex-wrap gap-1">{etapasProv.map((e) => <Selo key={e.id} cor={integ.padraoDe.includes(e.id) ? "violet" : "gray"}>{e.nome}{integ.padraoDe.includes(e.id) ? " · padrão" : ""}</Selo>)}</div>
+        </div>
         </div>
         {integ.status !== "nao_configurado" && (
           <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-600">
@@ -48,7 +53,7 @@ export function CartaoIntegracao({ info, integ, gastoMes, chamadas, outros }: { 
         )}
       </div>
 
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-slate-100 px-4 py-3 text-xs sm:grid-cols-3">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-slate-100 bg-slate-50/40 px-5 py-4 text-xs sm:grid-cols-3 [&_dt]:mb-0.5 [&_dt]:font-medium [&_dt]:text-slate-400 [&_dd]:font-semibold [&_dd]:text-tinta">
         <div><dt className="text-slate-500">Chave</dt><dd className="font-mono">{integ.temChave ? `••••${integ.chaveFinal ?? ""}` : "—"}</dd></div>
         {info.campos.some((c) => c.nome === "endpoint") && <div className="col-span-2 sm:col-span-1"><dt className="text-slate-500">Endpoint</dt><dd className="truncate" title={integ.endpoint ?? ""}>{integ.endpoint ?? "padrão"}</dd></div>}
         <div><dt className="text-slate-500">Saldo</dt><dd>{integ.saldo != null ? `${num(integ.saldo)} ${integ.saldoUnidade ?? ""}${integ.saldoManual ? " (manual)" : ""}` : "—"}</dd></div>
@@ -66,7 +71,7 @@ export function CartaoIntegracao({ info, integ, gastoMes, chamadas, outros }: { 
       {integ.ultimoErro && integ.status === "erro" && <p className="mx-4 mb-2 rounded bg-red-50 px-2 py-1 text-xs text-red-700">{integ.ultimoErro}</p>}
       {info.aviso && <p className="mx-4 mb-2 rounded bg-amber-50 px-2 py-1 text-xs text-amber-800">{info.aviso}</p>}
 
-      <div className="mt-auto flex flex-wrap gap-1.5 border-t border-slate-100 p-3">
+      <div className="mt-auto flex flex-wrap gap-1.5 border-t border-slate-100 p-4">
         <Botao variante={integ.temChave ? "secundario" : "primario"} onClick={() => setPainel(painel === "conectar" ? "" : "conectar")}>
           {integ.temChave ? <><KeyRound size={14} />Trocar chave</> : <><Plug size={14} />Conectar</>}
         </Botao>

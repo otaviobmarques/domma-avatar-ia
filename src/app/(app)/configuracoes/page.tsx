@@ -1,3 +1,4 @@
+import { Settings as IcSettings } from "lucide-react";
 import { asc, desc } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { exigir } from "@/lib/auth";
@@ -19,7 +20,7 @@ export default async function Configuracoes() {
   const claude = PROVEDORES.find((p) => p.id === "anthropic")!.modelos;
   return (
     <>
-      <Cabecalho titulo="Configurações" sub="Regras gerais do Domma AvatarIA." />
+      <Cabecalho titulo="Configurações" icone={IcSettings} sub="Regras gerais do Domma AvatarIA." />
       <div className="space-y-6">
         <Cartao titulo="Geral, rotulagem e orquestrador">
           <FormAcao acao={salvarGerais} rotulo="Salvar">

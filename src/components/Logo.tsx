@@ -13,7 +13,7 @@ export function Logo({ claro = false, produto = "AvatarIA", className }: { claro
     <div className={`flex items-center gap-2.5 ${className ?? ""}`}>
       <Simbolo tamanho={40} ponto={claro ? "#ffffff" : "#1E1238"} />
       <div className="leading-none">
-        <div className={`text-lg font-extrabold tracking-tight ${claro ? "text-white" : "text-tinta"}`}>Domma <span className="text-marca-500">{produto}</span></div>
+        <div className={`font-titulo text-lg font-extrabold tracking-tight ${claro ? "text-white" : "text-tinta"}`}>Domma <span className="text-marca-500">{produto}</span></div>
         <div className={`mt-1 text-[9px] font-bold tracking-[0.35em] ${claro ? "text-marca-100/70" : "text-marca-500"}`}>TECNOLOGIA</div>
       </div>
     </div>
