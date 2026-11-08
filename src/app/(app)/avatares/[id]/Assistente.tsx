@@ -6,10 +6,22 @@ import { Botao, Cartao, Aviso, Selo } from "@/components/ui";
 import { GravadorCamera, GravadorVoz } from "@/components/Gravadores";
 import type { Consentimento, Verificacao } from "@/db/schema";
 import { data } from "@/lib/formato";
+import { enviarArquivo } from "@/components/enviarArquivo";
 import {
   aceitarConsentimento, enviarVerificacao, novaFrase, enviarRosto, definirFotoPrincipal, verificarRosto, aprovarVerificacaoManual,
-  enviarVoz, treinarVoz, salvarModelos, compararVozes, concluirAvatar, testarAvatar, excluirClone,
+  enviarVoz, treinarVoz, salvarModelos, compararVozes, concluirAvatar, testarAvatar, excluirClone, statusTarefa,
 } from "@/app/acoes/avatares";
+
+/** Espera uma tarefa do worker terminar (conversões FFmpeg e comparações rodam fora do site). */
+async function aguardar(r: { ok: boolean; mensagem: string; tarefa?: string }) {
+  if (!r.ok || !r.tarefa) return { ...r, url: undefined as string | undefined, amostras: undefined as { rotulo: string; url: string; motor: string }[] | undefined };
+  for (let i = 0; i < 400; i++) {
+    await new Promise((ok) => setTimeout(ok, 1500));
+    const s = await statusTarefa(r.tarefa);
+    if (s.status !== "rodando") return s;
+  }
+  return { ok: false, mensagem: "A tarefa está demorando — confira se o worker está rodando", url: undefined, amostras: undefined };
+}
 
 type Props = {
   passo: number; admin: boolean; demo: boolean; motores: { id: string; ok: boolean }[]; termoModelo: string; empresa: string; textoLeitura: string;
@@ -75,7 +87,14 @@ export function Assistente(p: Props) {
             <li>• Falando para a câmera, luz frontal, fundo limpo</li><li>• Sem óculos escuros, boné ou mão no rosto</li>
             <li>• Fotos: frente, ¾ esquerda, ¾ direita, sorrindo, sério</li><li>• Mínimo 720p</li>
           </ul>
-          <form action={(fd) => rodar(async () => { const res = await enviarRosto(a.id, fd); return { ok: res.ok, mensagem: `${res.mensagem}. ${res.detalhes?.join(" · ") ?? ""}` }; })} className="space-y-3">
+          <form action={(fd) => rodar(async () => {
+            const v = fd.get("video") as File | null;
+            const fotos = (fd.getAll("fotos") as File[]).filter((f) => f.size);
+            const video = v && v.size ? await enviarArquivo(v, `avatares/${a.id}/bruto`) : undefined;
+            const caminhos: string[] = [];
+            for (const f of fotos) caminhos.push(await enviarArquivo(f, `avatares/${a.id}/fotos`));
+            return aguardar(await enviarRosto(a.id, { video, fotos: caminhos }));
+          })} className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <div><label className="rotulo">Vídeo (2–5 min)</label><input type="file" name="video" accept="video/*" className="campo" /></div>
               <div><label className="rotulo">Fotos (5–10)</label><input type="file" name="fotos" accept="image/*" multiple className="campo" /></div>
@@ -108,7 +127,7 @@ export function Assistente(p: Props) {
             {v?.observacao && <span className="text-xs text-slate-500">{v.observacao}</span>}
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Botao variante="secundario" disabled={pend || !a.fotos.length} onClick={() => rodar(() => verificarRosto(a.id))}><ShieldCheck size={14} />Comparar rosto</Botao>
+            <Botao variante="secundario" disabled={pend || !a.fotos.length} onClick={() => rodar(async () => aguardar(await verificarRosto(a.id)))}><ShieldCheck size={14} />Comparar rosto</Botao>
             {p.admin && v?.video && v.status !== "aprovada" && (
               <form action={(fd) => rodar(() => aprovarVerificacaoManual(a.id, fd))} className="flex gap-2">
                 <input name="observacao" className="campo w-64" placeholder="Observação da conferência manual" />
@@ -140,7 +159,7 @@ function Passo2({ avatar: a, rodar, pend, Mensagem, ir }: Sub & { ir: (n: number
       <div className="mb-3"><Botao variante="fantasma" disabled={pend} onClick={() => rodar(() => novaFrase(a.id))}><RefreshCw size={14} />Gerar outra frase</Botao></div>
       <GravadorCamera onPronto={setBlob} />
       <div className="mt-3 flex gap-2">
-        <Botao disabled={!blob || pend} onClick={() => { const fd = new FormData(); fd.append("video", new File([blob!], `verificacao.${blob!.type.includes("mp4") ? "mp4" : "webm"}`, { type: blob!.type })); rodar(() => enviarVerificacao(a.id, fd), 2); }}>
+        <Botao disabled={!blob || pend} onClick={() => rodar(async () => enviarVerificacao(a.id, await enviarArquivo(blob!, `avatares/${a.id}/bruto`, `verificacao.${blob!.type.includes("mp4") ? "mp4" : "webm"}`)), 2)}>
           {pend ? "Enviando…" : "Enviar verificação e continuar"}
         </Botao>
         {a.verificacao?.video && <Botao variante="secundario" onClick={() => ir(2)}>Já gravei — próximo</Botao>}
@@ -159,10 +178,10 @@ function Passo4({ avatar: a, rodar, pend, Mensagem, ir, textoLeitura }: Sub & { 
         <div className="max-h-80 overflow-auto rounded-lg bg-slate-50 p-4 text-[15px] leading-relaxed">{textoLeitura.split("\n").map((l, i) => <p key={i} className="mb-3">{l}</p>)}</div>
         <div className="space-y-4">
           <GravadorVoz onPronto={setBlob} />
-          <Botao disabled={!blob || pend} onClick={() => { const fd = new FormData(); fd.append("audio", new File([blob!], `voz.${blob!.type.includes("mp4") ? "m4a" : "webm"}`, { type: blob!.type })); rodar(() => enviarVoz(a.id, fd)); }}>
+          <Botao disabled={!blob || pend} onClick={() => rodar(async () => aguardar(await enviarVoz(a.id, await enviarArquivo(blob!, `avatares/${a.id}/bruto`, `voz.${blob!.type.includes("mp4") ? "m4a" : "webm"}`))))}>
             {pend ? "Enviando…" : "Enviar gravação"}
           </Botao>
-          <form action={(fd) => rodar(() => enviarVoz(a.id, fd))} className="flex items-end gap-2 border-t border-slate-100 pt-3">
+          <form action={(fd) => rodar(async () => { const f = fd.get("audio") as File; if (!f?.size) return { ok: false, mensagem: "Escolha um arquivo" }; return aguardar(await enviarVoz(a.id, await enviarArquivo(f, `avatares/${a.id}/bruto`))); })} className="flex items-end gap-2 border-t border-slate-100 pt-3">
             <div className="flex-1"><label className="rotulo">…ou envie um arquivo de áudio</label><input type="file" name="audio" accept="audio/*" className="campo" /></div>
             <Botao variante="secundario" disabled={pend}><Upload size={14} />Enviar</Botao>
           </form>
@@ -207,7 +226,7 @@ function Passo5({ avatar: a, rodar, pend, Mensagem, motores, demo, setMsg, ini }
 
       <Cartao titulo="Comparar vozes (A/B)">
         <p className="mb-2 text-sm text-slate-600">Toca o mesmo texto em dois motores sem dizer qual é qual. Escolha pelo ouvido.</p>
-        <Botao variante="secundario" disabled={pend} onClick={() => ini(async () => { const res = await compararVozes(a.id, "Oi! Sabia que dá pra fazer sua vistoria em poucos minutos? Acesse e confira."); setMsg(res.ok ? null : res); setAb(res.amostras ?? null); setRevelar(false); })}><Shuffle size={14} />Comparar vozes (A/B)</Botao>
+        <Botao variante="secundario" disabled={pend} onClick={() => ini(async () => { const res = await aguardar(await compararVozes(a.id, "Oi! Sabia que dá pra fazer sua vistoria em poucos minutos? Acesse e confira.")); setMsg(res.ok ? null : res); setAb(res.amostras ?? null); setRevelar(false); })}><Shuffle size={14} />Comparar vozes (A/B)</Botao>
         {ab && (
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {ab.map((x) => <div key={x.rotulo} className="rounded-lg border border-slate-200 p-3"><div className="mb-1 font-semibold">Voz {x.rotulo} {revelar && <span className="text-xs font-normal text-slate-500">= {x.motor}</span>}</div><audio src={x.url} controls className="w-full" /></div>)}

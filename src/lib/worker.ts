@@ -12,6 +12,7 @@ import * as ff from "./ffmpeg";
 import { lerConfig } from "./config";
 import { revisarFrames } from "./claude";
 import { avatarLite } from "./pipeline";
+import { TAREFAS } from "./tarefas";
 
 type Job = typeof schema.jobs.$inferSelect;
 const log = (...a: unknown[]) => console.log("[worker]", ...a);
@@ -372,7 +373,14 @@ const ETAPAS: Partial<Record<Etapa, (j: Job) => Promise<void>>> = {
 };
 
 async function processar(j: Job) {
-  const fn = ETAPAS[j.etapa];
+  if (j.etapa in TAREFAS) {
+    try {
+      const r = await TAREFAS[j.etapa as keyof typeof TAREFAS](j.entrada as never);
+      await concluir(j, { custo: 0, resposta: r });
+    } catch (e) { await falhar(j, e); }
+    return;
+  }
+  const fn = ETAPAS[j.etapa as Etapa];
   try {
     if (!fn) throw new Error(`Etapa ${j.etapa} sem executor`);
     await fn(j);

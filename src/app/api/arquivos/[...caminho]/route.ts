@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { ler, tipoPorExtensao, verificarAssinatura } from "@/lib/storage";
+import { ler, tipoPorExtensao, verificarAssinatura, usaSupabase, urlSupabase } from "@/lib/storage";
 
 /** Serve arquivos com URL assinada (navegador e provedores externos). Suporta Range para o player de vídeo. */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ caminho: string[] }> }) {
@@ -7,6 +7,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ cami
   const p = caminho.map(decodeURIComponent).join("/");
   const u = req.nextUrl;
   if (!verificarAssinatura(p, u.searchParams.get("exp"), u.searchParams.get("sig"))) return new Response("Link expirado ou inválido", { status: 403 });
+  if (usaSupabase()) {
+    // Redireciona para a URL assinada do Supabase: o arquivo não passa pela função (limite de resposta da Vercel)
+    try { return Response.redirect(await urlSupabase(p, 60 * 60 * 6, u.searchParams.get("download")), 302); }
+    catch { return new Response("Não encontrado", { status: 404 }); }
+  }
   let buf: Buffer;
   try { buf = await ler(p); } catch { return new Response("Não encontrado", { status: 404 }); }
   const tipo = tipoPorExtensao(p);

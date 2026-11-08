@@ -6,6 +6,7 @@ import { Botao, Cartao, Aviso, Selo } from "@/components/ui";
 import { segundosFala } from "@/lib/fala";
 import { brl } from "@/lib/formato";
 import { gerarRoteiroIA, salvarRoteiro, custoPreviaVoz, ouvirPreviaVoz } from "@/app/acoes/videos";
+import { statusTarefa } from "@/app/acoes/avatares";
 
 const MARCAS: { id: string; nome: string }[] = [
   { id: "animado", nome: "animado" }, { id: "pausa", nome: "pausa" }, { id: "olha_camera", nome: "olha p/ câmera" },
@@ -118,7 +119,15 @@ export function EditorRoteiro({ id, duracaoAlvo, briefingInicial, roteiroInicial
           const c = await custoPreviaVoz(id, blocos);
           if (!confirm(`Ouvir prévia da voz em ${c.motor ?? "?"}${c.simulado ? " (simulado)" : ""}.\nCusto estimado: ${c.simulado ? "R$ 0,00" : brl(c.custo)}. Continuar?`)) return;
           const r = await ouvirPreviaVoz(id, blocos);
-          setMsg(r); if (r.url) setAudio(r.url);
+          if (!r.ok || !r.tarefa) return setMsg(r);
+          setMsg(r);
+          for (let k = 0; k < 200; k++) {
+            await new Promise((ok) => setTimeout(ok, 1500));
+            const st = await statusTarefa(r.tarefa);
+            if (st.status === "rodando") continue;
+            setMsg(st); if (st.url) setAudio(st.url);
+            break;
+          }
         })}><Volume2 size={14} />Ouvir prévia da voz</Botao>
         {audio && <audio src={audio} controls autoPlay className="h-9" />}
         <Botao variante="fantasma" disabled={pend} onClick={() => ini(async () => setMsg(await salvarRoteiro(id, briefing, blocos)))}>Salvar</Botao>

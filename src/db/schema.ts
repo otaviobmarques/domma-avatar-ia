@@ -246,12 +246,14 @@ export const cenas = pgTable("cenas", {
   qualidade: text("qualidade").$type<"previa" | "final">().notNull().default("previa"),
 }, (t) => [index("cenas_video_idx").on(t.videoId, t.ordem)]);
 
+/** Tarefas de processamento fora do pipeline de vídeo (rodam no worker, que tem FFmpeg). */
+export type Tarefa = "proc_rosto" | "proc_voz" | "verificar_rosto" | "ab_voz" | "previa_voz";
 export type JobStatus = "pendente" | "rodando" | "ok" | "erro" | "cancelado" | "aguardando";
 export const jobs = pgTable("jobs", {
   id: id(),
   videoId: uuid("video_id").references(() => videos.id, { onDelete: "cascade" }),
   cenaId: uuid("cena_id").references(() => cenas.id, { onDelete: "cascade" }),
-  etapa: text("etapa").$type<Etapa>().notNull(),
+  etapa: text("etapa").$type<Etapa | Tarefa>().notNull(),
   provedor: text("provedor").notNull(),
   modelo: text("modelo"),
   status: text("status").$type<JobStatus>().notNull().default("pendente"),

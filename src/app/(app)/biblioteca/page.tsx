@@ -6,6 +6,7 @@ import { urlRelativa } from "@/lib/storage";
 import { Cabecalho, Cartao, Botao, Selo, Vazio } from "@/components/ui";
 import { adicionarItem, removerItem } from "@/app/acoes/biblioteca";
 import { Trash2 } from "lucide-react";
+import { FormBiblioteca } from "./FormBiblioteca";
 
 const TIPOS: Record<string, string> = { cenario: "Cenários", vinheta: "Vinhetas", chamada: "Chamadas prontas", trilha: "Trilhas", logotipo: "Logotipos", trecho: "Trechos salvos" };
 
@@ -31,7 +32,7 @@ export default async function Biblioteca({ searchParams }: { searchParams: Promi
       </div>
       {s.papel !== "cliente" && (
         <Cartao titulo="+ Adicionar" className="mb-6">
-          <form action={adicionarItem} className="grid gap-3 sm:grid-cols-6">
+          <FormBiblioteca acao={adicionarItem}>
             <div><label className="rotulo">Tipo</label><select name="tipo" className="campo" defaultValue={tipo ?? "cenario"}>{Object.entries(TIPOS).filter(([k]) => k !== "trecho").map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></div>
             <div><label className="rotulo">Nome</label><input name="nome" className="campo" /></div>
             <div className="sm:col-span-2"><label className="rotulo">Arquivo</label><input type="file" name="arquivo" className="campo" /></div>
@@ -39,7 +40,7 @@ export default async function Biblioteca({ searchParams }: { searchParams: Promi
             <div><label className="rotulo">Tags</label><input name="tags" className="campo" placeholder="separe por vírgula" /></div>
             <div className="sm:col-span-5"><label className="rotulo">Texto (para chamadas prontas)</label><input name="texto" className="campo" placeholder="ex.: Acesse masterlaudo.com.br" /></div>
             <div className="flex items-end"><Botao>Salvar</Botao></div>
-          </form>
+          </FormBiblioteca>
         </Cartao>
       )}
       {itens.length === 0 ? <Vazio>Nada aqui ainda.</Vazio> : (

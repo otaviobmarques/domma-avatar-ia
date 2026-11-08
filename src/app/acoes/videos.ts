@@ -264,38 +264,16 @@ export async function custoPreviaVoz(id: string, roteiro: BlocoRoteiro[]) {
   return { custo: l?.custoBrl ?? null, motor: l ? `${l.provedor}/${l.modelo}` : null, simulado: !!est.plano.voz?.simulado };
 }
 
-export async function ouvirPreviaVoz(id: string, roteiro: BlocoRoteiro[]): Promise<R & { url?: string }> {
+export async function ouvirPreviaVoz(id: string, roteiro: BlocoRoteiro[]): Promise<R & { tarefa?: string }> {
   const s = await exigir(["admin", "editor"]);
   const { video, avatar } = await meu(id, s);
   const est = await estimarVideo({ ...video, roteiro }, avatar);
   const voz = est.plano.voz;
   if (!voz) return { ok: false, mensagem: "Nenhum motor de voz disponível" };
-  const { textoFalado } = await import("@/lib/orquestrador");
-  const texto = roteiro.map((b) => textoFalado(b.texto)).filter(Boolean).join(" ... ");
-  const { salvar } = await import("@/lib/storage");
-  const destino = `videos/${id}/previa_voz_${Date.now()}`;
-  if (voz.simulado) {
-    const ff = await import("@/lib/ffmpeg");
-    const fs = await import("node:fs/promises");
-    const dir = await ff.tmp();
-    await ff.vozSimulada(`${dir}/v.m4a`, texto);
-    await salvar(`${destino}.m4a`, await fs.readFile(`${dir}/v.m4a`), "audio/mp4");
-    await fs.rm(dir, { recursive: true, force: true });
-    return { ok: true, mensagem: "Voz simulada (modo demonstração)", url: urlRelativa(`${destino}.m4a`)! };
-  }
-  const { conector } = await import("@/lib/conectores");
-  const { credenciais, registrarChamada } = await import("@/lib/integracoes");
-  const vozId = avatar?.modelos?.[voz.provedor];
-  if (!vozId) return { ok: false, mensagem: `Escolha um avatar com voz treinada em ${voz.provedor} (passo 3)` };
-  const inicio = Date.now();
-  try {
-    const r = await conector(voz.provedor).voz!(await credenciais(voz.provedor), { texto, vozId, modelo: voz.modelo });
-    await salvar(`${destino}.${r.ext}`, r.audio, "audio/mpeg");
-    const custo = est.linhas.find((x) => x.etapa === "voz")?.custoBrl ?? null;
-    await registrarChamada({ provedor: voz.provedor, modelo: voz.modelo, videoId: id, etapa: "voz", acao: "previa_voz", inicio, custo, sucesso: true });
-    return { ok: true, mensagem: `Prévia gerada em ${voz.provedor}`, url: urlRelativa(`${destino}.${r.ext}`)! };
-  } catch (e) {
-    await registrarChamada({ provedor: voz.provedor, modelo: voz.modelo, videoId: id, etapa: "voz", acao: "previa_voz", inicio, sucesso: false, erro: (e as Error).message });
-    return { ok: false, mensagem: (e as Error).message };
-  }
+  const { enfileirarTarefa } = await import("@/lib/tarefas");
+  const tarefa = await enfileirarTarefa("previa_voz", {
+    videoId: id, roteiro, provedor: voz.provedor, modelo: voz.modelo, simulado: voz.simulado,
+    vozId: avatar?.modelos?.[voz.provedor], custo: est.linhas.find((x) => x.etapa === "voz")?.custoBrl ?? null,
+  });
+  return { ok: true, mensagem: "Gerando a voz…", tarefa };
 }

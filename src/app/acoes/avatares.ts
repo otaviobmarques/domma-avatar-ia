@@ -1,22 +1,19 @@
 "use server";
-import fs from "node:fs/promises";
 import path from "node:path";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/db";
-import type { Amostras } from "@/db/schema";
 import { exigir, ehAdmin } from "@/lib/auth";
 import { auditar } from "@/lib/auditoria";
-import { salvar, apagarPrefixo, arquivoLocal, ler, tipoPorExtensao } from "@/lib/storage";
+import { salvar, apagarPrefixo, ler, urlRelativa } from "@/lib/storage";
 import { sha256 } from "@/lib/crypto";
 import { textoTermo, TERMO_VERSAO, fraseAleatoria, cpfValido } from "@/lib/termo";
-import * as ff from "@/lib/ffmpeg";
 import { conector } from "@/lib/conectores";
 import { credenciais, registrarChamada } from "@/lib/integracoes";
 import { carregarContexto, disponibilidade } from "@/lib/orquestrador";
-import { compararRosto } from "@/lib/claude";
+import { enfileirarTarefa } from "@/lib/tarefas";
 import { gerarPrevia } from "@/lib/pipeline";
 
 type R = { ok: boolean; mensagem: string };
@@ -28,7 +25,6 @@ async function carregar(id: string) {
   return { db, a };
 }
 
-const ext = (f: File, padrao: string) => (path.extname(f.name) || padrao).toLowerCase();
 
 export async function criarAvatar(fd: FormData) {
   const s = await exigir(["admin", "editor"]);
@@ -68,15 +64,13 @@ export async function aceitarConsentimento(id: string, fd: FormData): Promise<R>
   return { ok: true, mensagem: "Consentimento registrado" };
 }
 
-/** Passo 2 — verificação ao vivo: grava pela câmera a frase aleatória gerada na hora. */
-export async function enviarVerificacao(id: string, fd: FormData): Promise<R> {
+/** Passo 2 — verificação ao vivo: o vídeo já foi enviado direto ao Storage; aqui só registra. */
+export async function enviarVerificacao(id: string, caminho: string): Promise<R> {
   await exigir(["admin", "editor"]);
   const { db, a } = await carregar(id);
   if (!a.consentimento) return { ok: false, mensagem: "Faça o consentimento primeiro" };
-  const f = fd.get("video") as File | null;
-  if (!f || !f.size) return { ok: false, mensagem: "Grave o vídeo de verificação" };
-  const bruto = await salvar(`avatares/${id}/verificacao${ext(f, ".webm")}`, Buffer.from(await f.arrayBuffer()), f.type);
-  await db.update(schema.avatares).set({ verificacao: { ...a.verificacao!, video: bruto, gravadaEm: new Date().toISOString(), status: "gravada" }, status: a.status === "consentido" ? "verificado" : a.status })
+  if (!caminho.startsWith(`avatares/${id}/`)) return { ok: false, mensagem: "Arquivo inválido" };
+  await db.update(schema.avatares).set({ verificacao: { ...a.verificacao!, video: caminho, gravadaEm: new Date().toISOString(), status: "gravada" }, status: a.status === "consentido" ? "verificado" : a.status })
     .where(eq(schema.avatares.id, id));
   revalidatePath(`/avatares/${id}`);
   return { ok: true, mensagem: "Verificação gravada. O rosto será comparado com as fotos no passo 3." };
@@ -90,45 +84,14 @@ export async function novaFrase(id: string): Promise<R> {
   return { ok: true, mensagem: "Nova frase gerada" };
 }
 
-/** Passo 3 — rosto: vídeo de 2 a 5 min + 5 a 10 fotos, com checklist automático. */
-export async function enviarRosto(id: string, fd: FormData): Promise<R & { checklist?: Record<string, boolean>; detalhes?: string[] }> {
+/** Passo 3 — rosto: vídeo de 2 a 5 min + 5 a 10 fotos. A conversão e o checklist rodam no worker. */
+export async function enviarRosto(id: string, e: { video?: string; fotos: string[] }): Promise<R & { tarefa?: string }> {
   await exigir(["admin", "editor"]);
-  const { db, a } = await carregar(id);
-  const amostras: Amostras = { ...a.amostras, fotos: [...(a.amostras.fotos ?? [])] };
-  const detalhes: string[] = [];
-  const check: Record<string, boolean> = { ...(amostras.checklist ?? {}) };
-  const dir = await ff.tmp("rosto-");
-  const v = fd.get("video") as File | null;
-  if (v && v.size) {
-    const bruto = path.join(dir, `bruto${ext(v, ".mp4")}`);
-    await fs.writeFile(bruto, Buffer.from(await v.arrayBuffer()));
-    const mp4 = path.join(dir, "rosto.mp4");
-    await ff.converterParaMp4(mp4, bruto);
-    const d = await ff.duracao(mp4);
-    const dim = await ff.dimensoesMidia(mp4);
-    const luz = await ff.brilhoMedio(mp4);
-    check.duracao = d >= 120 && d <= 300;
-    check.resolucao = !!dim && Math.min(dim.w, dim.h) >= 720;
-    check.luz = luz != null && luz >= 70 && luz <= 200;
-    detalhes.push(`Duração ${Math.round(d)}s ${check.duracao ? "✓" : "(ideal: 2 a 5 min)"}`);
-    detalhes.push(`Resolução ${dim ? `${dim.w}×${dim.h}` : "?"} ${check.resolucao ? "✓" : "(mín. 720p)"}`);
-    detalhes.push(`Luz média ${luz?.toFixed(0) ?? "?"} ${check.luz ? "✓" : luz != null && luz < 70 ? "(escuro — use luz frontal)" : "(estourado)"}`);
-    amostras.video = await salvar(`avatares/${id}/rosto.mp4`, await fs.readFile(mp4), "video/mp4");
-    amostras.videoDuracao = d;
-  }
-  const fotos = fd.getAll("fotos").filter((x): x is File => x instanceof File && x.size > 0);
-  for (const [i, f] of fotos.entries()) {
-    const p = await salvar(`avatares/${id}/fotos/${Date.now()}_${i}${ext(f, ".jpg")}`, Buffer.from(await f.arrayBuffer()), f.type || "image/jpeg");
-    amostras.fotos.push(p);
-  }
-  amostras.fotos = amostras.fotos.slice(-10);
-  check.fotos = amostras.fotos.length >= 5 && amostras.fotos.length <= 10;
-  detalhes.push(`${amostras.fotos.length} foto(s) ${check.fotos ? "✓" : "(envie de 5 a 10, ângulos e expressões variados)"}`);
-  amostras.checklist = check;
-  await db.update(schema.avatares).set({ amostras, foto: a.foto ?? amostras.fotos[0] ?? null, status: a.status === "verificado" ? "amostras" : a.status }).where(eq(schema.avatares.id, id));
-  await fs.rm(dir, { recursive: true, force: true });
-  revalidatePath(`/avatares/${id}`);
-  return { ok: true, mensagem: "Material enviado", checklist: check, detalhes };
+  await carregar(id);
+  const dono = (c: string) => c.startsWith(`avatares/${id}/`);
+  if ((e.video && !dono(e.video)) || !e.fotos.every(dono)) return { ok: false, mensagem: "Arquivo inválido" };
+  const tarefa = await enfileirarTarefa("proc_rosto", { avatarId: id, video: e.video, fotos: e.fotos });
+  return { ok: true, mensagem: "Processando o material…", tarefa };
 }
 
 export async function definirFotoPrincipal(id: string, foto: string): Promise<R> {
@@ -141,7 +104,7 @@ export async function definirFotoPrincipal(id: string, foto: string): Promise<R>
 }
 
 /** Compara o rosto da verificação ao vivo com as fotos (Claude). Sem Claude: aprovação manual do Administrador. */
-export async function verificarRosto(id: string): Promise<R> {
+export async function verificarRosto(id: string): Promise<R & { tarefa?: string }> {
   const s = await exigir(["admin", "editor"]);
   const { db, a } = await carregar(id);
   if (!a.verificacao?.video) return { ok: false, mensagem: "Grave a verificação (passo 2)" };
@@ -156,20 +119,8 @@ export async function verificarRosto(id: string): Promise<R> {
     }
     return { ok: false, mensagem: "Claude não disponível. O Administrador pode aprovar a verificação manualmente." };
   }
-  const dir = await ff.tmp("verif-");
-  try {
-    const local = await arquivoLocal(a.verificacao.video, dir);
-    const frames = await ff.extrairFrames(local, 3, 640);
-    const fotos = await Promise.all(a.amostras.fotos.slice(0, 3).map(async (f) => ({ dados: await ler(f), tipo: tipoPorExtensao(f) })));
-    const r = await compararRosto({ avatarId: id, verificacao: frames.map((f) => f.arquivo), fotos });
-    const aprovada = r.mesmaPessoa && r.confianca !== "baixa";
-    await db.update(schema.avatares).set({ verificacao: { ...a.verificacao, status: aprovada ? "aprovada" : "reprovada", observacao: `Claude (${r.confianca}): ${r.observacao}` } }).where(eq(schema.avatares.id, id));
-    await auditar(s, aprovada ? "verificacao_aprovada" : "verificacao_reprovada", id, r);
-    revalidatePath(`/avatares/${id}`);
-    return { ok: aprovada, mensagem: aprovada ? `Rosto confere (${r.confianca}). ${r.observacao}` : `Não confere: ${r.observacao}` };
-  } catch (e) {
-    return { ok: false, mensagem: (e as Error).message };
-  } finally { await fs.rm(dir, { recursive: true, force: true }); }
+  const tarefa = await enfileirarTarefa("verificar_rosto", { avatarId: id, usuarioId: s.id, usuarioEmail: s.email });
+  return { ok: true, mensagem: "Comparando rosto…", tarefa };
 }
 
 export async function aprovarVerificacaoManual(id: string, fd: FormData): Promise<R> {
@@ -184,30 +135,15 @@ export async function aprovarVerificacaoManual(id: string, fd: FormData): Promis
   return { ok: true, mensagem: "Verificação aprovada" };
 }
 
-/** Passo 4 — voz: 2 minutos de leitura guiada, com medidor de ruído. */
-export async function enviarVoz(id: string, fd: FormData): Promise<R> {
+/** Passo 4 — voz: converte e mede no worker. */
+export async function enviarVoz(id: string, caminho: string): Promise<R & { tarefa?: string }> {
   await exigir(["admin", "editor"]);
-  const { db, a } = await carregar(id);
-  const f = fd.get("audio") as File | null;
-  if (!f || !f.size) return { ok: false, mensagem: "Grave ou envie o áudio" };
-  const dir = await ff.tmp("voz-");
-  const bruto = path.join(dir, `bruto${ext(f, ".webm")}`);
-  await fs.writeFile(bruto, Buffer.from(await f.arrayBuffer()));
-  const mp3 = path.join(dir, "voz.mp3");
-  await ff.converterAudio(mp3, bruto);
-  const final = (await fs.stat(mp3).catch(() => null)) ? mp3 : mp3.replace(/\.mp3$/, ".m4a");
-  const d = await ff.duracao(final);
-  const db_ = await ff.nivelMedioDb(final);
-  const p = await salvar(`avatares/${id}/voz${path.extname(final)}`, await fs.readFile(final), "audio/mpeg");
-  await fs.rm(dir, { recursive: true, force: true });
-  const check = { ...(a.amostras.checklist ?? {}), vozDuracao: d >= 90, vozNivel: db_ != null && db_ > -35 && db_ < -8 };
-  await db.update(schema.avatares).set({ amostras: { ...a.amostras, voz: p, vozDuracao: d, vozRuidoDb: db_ ?? undefined, checklist: check } }).where(eq(schema.avatares.id, id));
-  revalidatePath(`/avatares/${id}`);
-  const avisos = [!check.vozDuracao && "grave pelo menos 1min30 (ideal 2 min)", !check.vozNivel && "nível de áudio fora do ideal (fale mais perto do microfone, em local silencioso)"].filter(Boolean);
-  return { ok: true, mensagem: `Voz enviada (${Math.round(d)}s, ${db_?.toFixed(0) ?? "?"} dB)${avisos.length ? ` — atenção: ${avisos.join("; ")}` : ""}` };
+  await carregar(id);
+  if (!caminho.startsWith(`avatares/${id}/`)) return { ok: false, mensagem: "Arquivo inválido" };
+  const tarefa = await enfileirarTarefa("proc_voz", { avatarId: id, bruto: caminho });
+  return { ok: true, mensagem: "Processando a voz…", tarefa };
 }
 
-/** Passo 5 — treina a voz nos motores escolhidos e registra os IDs dos modelos. */
 export async function treinarVoz(id: string, prov: string): Promise<R> {
   const s = await exigir(["admin", "editor"]);
   const { db, a } = await carregar(id);
@@ -250,34 +186,12 @@ export async function salvarModelos(id: string, fd: FormData): Promise<R> {
   return { ok: true, mensagem: "Motores salvos" };
 }
 
-/** Comparar vozes (A/B): mesmo texto em dois motores, sem dizer qual é qual. */
-export async function compararVozes(id: string, texto: string): Promise<R & { amostras?: { rotulo: string; url: string; motor: string }[] }> {
+/** Comparar vozes (A/B): mesmo texto em dois motores, sem dizer qual é qual. Gerado no worker. */
+export async function compararVozes(id: string, texto: string): Promise<R & { tarefa?: string }> {
   await exigir(["admin", "editor"]);
-  const { a } = await carregar(id);
-  const ctx = await carregarContexto();
-  const motores = [["voicestudio", "voicestudio-tts"], ["elevenlabs", "eleven_multilingual_v2"]] as const;
-  const { urlRelativa } = await import("@/lib/storage");
-  const res: { rotulo: string; url: string; motor: string }[] = [];
-  for (const [prov, modelo] of motores) {
-    const real = disponibilidade(ctx, prov).ok && a.modelos[prov] && !a.modelos[prov].startsWith("demo-");
-    const destino = `avatares/${id}/ab/${prov}_${Date.now()}.${real ? "mp3" : "m4a"}`;
-    if (real) {
-      const inicio = Date.now();
-      const r = await conector(prov).voz!(await credenciais(prov), { texto, vozId: a.modelos[prov], modelo });
-      await salvar(destino, r.audio, "audio/mpeg");
-      await registrarChamada({ provedor: prov, modelo, acao: "teste_ab", inicio, sucesso: true });
-    } else if (ctx.config.modoDemo) {
-      const dir = await ff.tmp();
-      const f = path.join(dir, "v.m4a");
-      await ff.vozSimulada(f, texto);
-      await salvar(destino, await fs.readFile(f), "audio/mp4");
-      await fs.rm(dir, { recursive: true, force: true });
-    } else continue;
-    res.push({ rotulo: "", url: urlRelativa(destino)!, motor: real ? prov : `${prov} (simulado)` });
-  }
-  if (res.length < 2) return { ok: false, mensagem: "É preciso dois motores de voz disponíveis (ou o modo demonstração)" };
-  res.sort(() => Math.random() - 0.5).forEach((r, i) => (r.rotulo = i === 0 ? "A" : "B"));
-  return { ok: true, mensagem: "Ouça as duas e escolha", amostras: res };
+  await carregar(id);
+  const tarefa = await enfileirarTarefa("ab_voz", { avatarId: id, texto });
+  return { ok: true, mensagem: "Gerando as duas vozes…", tarefa };
 }
 
 export async function concluirAvatar(id: string): Promise<R> {
@@ -334,4 +248,16 @@ export async function excluirClone(id: string): Promise<R> {
   await auditar(s, "clone_excluido", id, { relatorio });
   revalidatePath("/avatares");
   return { ok: true, mensagem: `Clone excluído. ${relatorio.join(" · ") || "Nenhum modelo externo."}` };
+}
+
+/** Acompanha uma tarefa do worker (a tela consulta a cada 1,5 s). */
+export async function statusTarefa(jobId: string) {
+  await exigir();
+  const db = await getDb();
+  const [j] = await db.select().from(schema.jobs).where(eq(schema.jobs.id, jobId));
+  if (!j) return { status: "erro" as const, ok: false, mensagem: "Tarefa não encontrada" };
+  if (j.status === "erro") return { status: "erro" as const, ok: false, mensagem: j.erro ?? "Falhou" };
+  if (j.status !== "ok") return { status: "rodando" as const, ok: false, mensagem: "" };
+  const r = (j.resposta ?? {}) as { ok: boolean; mensagem: string; caminho?: string; amostras?: { rotulo: string; caminho: string; motor: string }[] };
+  return { status: "ok" as const, ok: r.ok, mensagem: r.mensagem, url: r.caminho ? urlRelativa(r.caminho) : undefined, amostras: r.amostras?.map((x) => ({ rotulo: x.rotulo, motor: x.motor, url: urlRelativa(x.caminho)! })) };
 }

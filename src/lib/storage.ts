@@ -9,7 +9,7 @@ import { hmac } from "./crypto";
  * - Com SUPABASE_URL: Supabase Storage (bucket privado), URLs assinadas.
  */
 const RAIZ = path.join(process.cwd(), ".data", "files");
-const usaSupabase = () => !!(env.supabaseUrl && env.supabaseKey);
+export const usaSupabase = () => !!(env.supabaseUrl && env.supabaseKey);
 
 function seguro(p: string) {
   const n = path.posix.normalize(p).replace(/^\/+/, "");
@@ -100,4 +100,31 @@ export function tipoPorExtensao(p: string) {
     ".m4a": "audio/mp4", ".ogg": "audio/ogg", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp",
     ".srt": "text/plain", ".vtt": "text/vtt", ".json": "application/json",
   } as Record<string, string>)[ext] ?? "application/octet-stream";
+}
+
+/** URL de leitura do Supabase (assinada lá) — usada pelo /api/arquivos para redirecionar sem passar o arquivo pela função. */
+export async function urlSupabase(caminho: string, validadeSeg = 60 * 60 * 6, download?: string | null) {
+  const p = seguro(caminho);
+  const r = await sb("POST", `object/sign/${env.supabaseBucket}/${p}`, JSON.stringify({ expiresIn: validadeSeg }), "application/json");
+  const j = (await r.json()) as { signedURL?: string; signedUrl?: string };
+  const rel = j.signedURL ?? j.signedUrl ?? "";
+  const u = `${env.supabaseUrl}/storage/v1${rel.startsWith("/") ? rel : `/${rel}`}`;
+  return download ? `${u}&download=${encodeURIComponent(download)}` : u;
+}
+
+/** Upload direto do navegador (não passa pelo servidor web — limite de corpo da Vercel). */
+export async function urlUpload(caminho: string): Promise<{ url: string; caminho: string }> {
+  const p = seguro(caminho);
+  if (usaSupabase()) {
+    const r = await sb("POST", `object/upload/sign/${env.supabaseBucket}/${p}`, JSON.stringify({}), "application/json");
+    const j = (await r.json()) as { url: string };
+    return { url: `${env.supabaseUrl}/storage/v1${j.url.startsWith("/") ? j.url : `/${j.url}`}`, caminho: p };
+  }
+  const exp = Math.floor(Date.now() / 1000) + 60 * 60;
+  return { url: `/api/upload/${p}?exp=${exp}&sig=${hmac(`up:${p}:${exp}`)}`, caminho: p };
+}
+
+export function verificarUpload(p: string, exp: string | null, sig: string | null) {
+  if (!exp || !sig || Number(exp) < Date.now() / 1000) return false;
+  return hmac(`up:${p}:${exp}`) === sig;
 }

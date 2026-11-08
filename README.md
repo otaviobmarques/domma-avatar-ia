@@ -39,13 +39,17 @@ npm run dev
 
 Acesse http://localhost:3000 — login inicial: `ADMIN_EMAIL` / `ADMIN_PASSWORD` do `.env.local` (padrão `admin@domma.local` / `admin123`, **troque**). Sem `DATABASE_URL`, usa Postgres embutido (PGlite) em `./.data`.
 
-## Produção
+## Produção — Supabase + Vercel + Railway
 
-- **Banco e arquivos:** Supabase — `DATABASE_URL` (string de conexão, modo Session) + `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_BUCKET` (bucket **privado**). As migrações rodam sozinhas na subida.
-- **Web + worker:** a imagem `Dockerfile` (com FFmpeg) serve para os dois. Serviço web: `npm start` com `WORKER_INLINE=0`; serviço worker: `npm run worker`. Railway funciona direto com o Dockerfile.
-- `APP_URL` precisa ser a URL pública — os provedores (Kling, HeyGen) baixam foto e áudio por URL assinada.
+| Peça | Onde | O que faz |
+|---|---|---|
+| Banco + arquivos | **Supabase** | Postgres (migrações automáticas na subida) e Storage em bucket **privado** |
+| Telas | **Vercel** | Next.js com `WORKER_INLINE=0`. Uploads vão **direto do navegador ao Supabase Storage** (URL assinada) e arquivos são entregues por redirecionamento — nada grande passa pelas funções (limite de ~4,5 MB) |
+| Worker | **Railway** | `Dockerfile` (com FFmpeg) + start command `npm run worker`. Processa a fila: voz, avatar, cenas, montagem, revisão, conversão do vídeo do rosto e da voz, comparação facial, prévias |
 
-> **Vercel:** as funções da Vercel limitam o corpo da requisição a ~4,5 MB e não têm FFmpeg. O upload do vídeo do avatar (2–5 min) e a conversão de áudio rodam no servidor web, então hospedar o web na Vercel exige trocar os uploads por envio direto ao Supabase Storage (URL assinada de upload) e mover as conversões para o worker.
+Variáveis (iguais na Vercel e no Railway): `DATABASE_URL` (pooler do Supabase), `APP_ENCRYPTION_KEY`, `AUTH_SECRET`, `APP_URL` (URL da Vercel), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_BUCKET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`; na Vercel `WORKER_INLINE=0`. Opcional: `RESEND_API_KEY` + `EMAIL_REMETENTE` para enviar convites por e-mail.
+
+> `APP_ENCRYPTION_KEY` precisa ser **a mesma** nos dois serviços — é ela que decifra as chaves de API.
 
 ## Estrutura
 
