@@ -5,7 +5,7 @@ import { auditar } from "@/lib/auditoria";
 
 export async function acaoEntrar(_: unknown, fd: FormData) {
   const s = await entrar(String(fd.get("email") ?? ""), String(fd.get("senha") ?? ""));
-  if (!s) return { erro: "E-mail ou senha inválidos" };
+  if (!s) return { erro: "Usuário ou senha inválidos" };
   await auditar(s, "login");
   redirect("/");
 }

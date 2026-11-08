@@ -22,7 +22,7 @@ export async function seed(db: DB) {
       { nome: "RedBox", orcamentoMensal: 2000 },
     ]).returning();
     await db.insert(schema.usuarios).values({
-      nome: "Administrador",
+      nome: env.adminEmail.includes("@") ? "Administrador" : env.adminEmail.charAt(0).toUpperCase() + env.adminEmail.slice(1),
       email: env.adminEmail.toLowerCase(),
       senhaHash: await bcrypt.hash(env.adminPassword, 10),
       papel: "admin",

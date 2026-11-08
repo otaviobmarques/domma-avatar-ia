@@ -14,8 +14,8 @@ export default function Entrar() {
           <h1 className="mt-6 text-2xl font-bold">Entrar</h1>
           <p className="text-sm text-slate-500">Gêmeo digital com IA</p>
         </div>
-        <label className="rotulo" htmlFor="email">E-mail</label>
-        <input id="email" name="email" type="email" required className="campo mb-3" autoComplete="email" />
+        <label className="rotulo" htmlFor="email">E-mail ou usuário</label>
+        <input id="email" name="email" type="text" required className="campo mb-3" autoComplete="username" />
         <label className="rotulo" htmlFor="senha">Senha</label>
         <input id="senha" name="senha" type="password" required className="campo mb-4" autoComplete="current-password" />
         {estado?.erro && <p className="mb-3 text-sm text-red-600">{estado.erro}</p>}
