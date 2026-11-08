@@ -258,9 +258,11 @@ const googleVeo: Conector = {
 
 /* ---------------- Higgsfield (Cinema Studio 4.0 — movimento de câmera) ---------------- */
 const HF = "https://api.higgsfield.ai";
+/** Chave única do console (já vem como "id:segredo") ou, em contas antigas, Key ID + Key Secret separados. */
 function hfHeaders(c: Credenciais) {
-  if (!c.apiKey || !c.secretKey) throw new ErroProvedor("Cadastre a Key ID e a Key Secret do Higgsfield", 401, false, false);
-  return { Authorization: `Key ${c.apiKey}:${c.secretKey}`, "Content-Type": "application/json" };
+  if (!c.apiKey) throw new ErroProvedor("Cadastre a chave de API do Higgsfield", 401, false, false);
+  const chave = c.secretKey && !c.apiKey.includes(":") ? `${c.apiKey}:${c.secretKey}` : c.apiKey;
+  return { Authorization: `Key ${chave}`, "Content-Type": "application/json" };
 }
 const higgsfield: Conector = {
   async testar(c) {

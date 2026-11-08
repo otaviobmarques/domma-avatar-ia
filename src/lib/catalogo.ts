@@ -159,10 +159,10 @@ export const PROVEDORES: ProvedorInfo[] = [
     nome: "Higgsfield",
     descricao: "Cenas com movimento de câmera (Cinema Studio 4.0) para peças de redes sociais.",
     etapas: ["efeitos", "cenas"],
-    credencial: "Key ID + Key Secret (console.higgsfield.ai)",
+    credencial: "Chave de API (console.higgsfield.ai)",
     campos: [
-      { nome: "apiKey", rotulo: "Key ID", tipo: "segredo", obrigatorio: true, ajuda: "No console, crie uma chave: ela vem em duas partes, Key ID e Key Secret.", link: { url: "https://console.higgsfield.ai", texto: "Gerar chave no Higgsfield" } },
-      { nome: "secretKey", rotulo: "Key Secret", tipo: "segredo", obrigatorio: true, ajuda: "A segunda parte da chave (aparece junto com a Key ID)." },
+      { nome: "apiKey", rotulo: "Chave de API", tipo: "segredo", obrigatorio: true, ajuda: "No console, clique em criar chave e depois em “Copy API key”. Cole a chave inteira aqui.", link: { url: "https://console.higgsfield.ai", texto: "Gerar chave no Higgsfield" } },
+      { nome: "secretKey", rotulo: "Key Secret", tipo: "segredo", avancado: true, ajuda: "Só se a sua conta antiga mostrou a chave em duas partes (Key ID + Key Secret). Nesse caso, ponha a Key ID no campo de cima." },
       { nome: "endpoint", rotulo: "Base da API", tipo: "url", avancado: true, exemplo: "https://api.higgsfield.ai", ajuda: "Vazio = padrão." },
     ],
     modelos: [{ id: "higgsfield-efeitos", nome: "Cinema Studio 4.0 (movimento de câmera)", etapa: "cenas" }],
